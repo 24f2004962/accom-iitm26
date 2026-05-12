@@ -1,12 +1,10 @@
-const PROD_API = "https://zip-12--vpahaddevbhoomi.replit.app/api";
+// ✅ Set EXPO_PUBLIC_API_URL env var (in Replit secrets or EAS build env)
+// to your Railway deployed URL, e.g. "https://campusops.up.railway.app/api"
+// If not set, falls back to the value below.
+const PROD_API = process.env.EXPO_PUBLIC_API_URL || "https://accom-iitm-production.up.railway.app/api";
 
 module.exports = function applyAppConfig({ config }) {
-  const explicitApiUrl = process.env.EXPO_PUBLIC_API_URL;
   const proxyUrl = process.env.EXPO_PUBLIC_WEB_ORIGIN || "https://localhost";
-
-  // IMPORTANT: never fall back to localhost — real devices cannot reach it.
-  // Always use the production API unless an explicit override is provided.
-  const apiUrl = explicitApiUrl || PROD_API;
 
   return {
     ...config,
@@ -18,7 +16,7 @@ module.exports = function applyAppConfig({ config }) {
     }),
     extra: {
       ...config.extra,
-      apiUrl,
+      apiUrl: PROD_API,
       router: {
         ...config.extra?.router,
         origin: proxyUrl,

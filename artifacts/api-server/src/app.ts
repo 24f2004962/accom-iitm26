@@ -8,7 +8,13 @@ import cors from "cors";
 import compression from "compression";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import path from "path";
+import { fileURLToPath } from "url";
 import router from "./routes/index.js";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const WEB_ADMIN_DIST = path.resolve(__dirname, "../../../artifacts/web-admin/dist");
 
 const app: Express = express();
 
@@ -97,20 +103,26 @@ app.get("/api/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
-// ================= ROOT CHECK (OPTIONAL BUT HELPFUL) =================
+// ================= WEB ADMIN STATIC FILES (production only) =================
 
-app.get("/", (_req, res) => {
-  res.json({ message: "CampusOps API Running 🚀" });
-});
-
-// ================= 404 HANDLER =================
-
-app.use((_req: Request, res: Response) => {
-  res.status(404).json({
-    error: "Not Found",
-    message: "Route not found",
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(WEB_ADMIN_DIST));
+  app.get("*", (_req, res) => {
+    res.sendFile(path.join(WEB_ADMIN_DIST, "index.html"));
   });
-});
+} else {
+  app.get("/", (_req, res) => {
+    res.json({ message: "CampusOps API Running 🚀" });
+  });
+
+  // ================= 404 HANDLER =================
+  app.use((_req: Request, res: Response) => {
+    res.status(404).json({
+      error: "Not Found",
+      message: "Route not found",
+    });
+  });
+}
 
 // ================= ERROR HANDLER =================
 
