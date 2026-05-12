@@ -9,12 +9,11 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import path from "path";
-import { fileURLToPath } from "url";
 import router from "./routes/index.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const WEB_ADMIN_DIST = path.resolve(__dirname, "../../../artifacts/web-admin/dist");
+// process.cwd() is /app in Railway (WORKDIR) and the workspace root in dev.
+// Works correctly in both ESM (tsx dev) and CJS (esbuild production bundle).
+const WEB_ADMIN_DIST = path.resolve(process.cwd(), "artifacts/web-admin/dist");
 
 const app: Express = express();
 
@@ -107,7 +106,7 @@ app.get("/api/health", (_req, res) => {
 
 if (process.env.NODE_ENV === "production") {
   app.use(express.static(WEB_ADMIN_DIST));
-  app.get("*", (_req, res) => {
+  app.get("/{*splat}", (_req, res) => {
     res.sendFile(path.join(WEB_ADMIN_DIST, "index.html"));
   });
 } else {
