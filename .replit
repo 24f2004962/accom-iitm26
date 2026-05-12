@@ -51,12 +51,13 @@ waitForPort = 8080
 name = "Expo Go (Tunnel)"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "cd artifacts/mobile && pnpm exec expo start --tunnel"
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "cd artifacts/mobile && CI=false pnpm exec expo start --web --port 8099"
+waitForPort = 8099
 
 [[workflows.workflow]]
 name = "Start Web Admin"
@@ -97,3 +98,7 @@ externalPort = 80
 [[ports]]
 localPort = 8080
 externalPort = 8080
+
+[[ports]]
+localPort = 8099
+externalPort = 8099
