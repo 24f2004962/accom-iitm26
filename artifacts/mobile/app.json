@@ -1,0 +1,71 @@
+{
+  "expo": {
+    "name": "CampusOps",
+    "slug": "campusops",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "mobile",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#7C3AED"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "in.iitm.campusops",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "in.iitm.campusops",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#7C3AED"
+      },
+      "allowBackup": false
+    },
+    "web": {
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://localhost"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "kotlinVersion": "2.1.20",
+            "kspVersion": "2.1.20-2.0.1"
+          }
+        }
+      ],
+      "expo-font",
+      "expo-web-browser"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "apiUrl": "https://zip-12--vpahaddevbhoomi.replit.app/api",
+      "router": {
+        "origin": "https://zip-12--vpahaddevbhoomi.replit.app",
+        "headOrigin": "https://zip-12--vpahaddevbhoomi.replit.app"
+      },
+      "eas": {
+        "projectId": "0533180b-87ac-4b76-82a8-c48de7d426c7"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "owner": "sportifykartik"
+  }
+}

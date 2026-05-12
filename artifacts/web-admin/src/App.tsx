@@ -1,0 +1,64 @@
+import React, { useState } from "react";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import Layout, { type Page } from "@/components/Layout";
+import Login from "@/pages/Login";
+import Dashboard from "@/pages/Dashboard";
+import Students from "@/pages/Students";
+import Attendance from "@/pages/Attendance";
+import Staff from "@/pages/Staff";
+import Hostels from "@/pages/Hostels";
+import LostFound from "@/pages/LostFound";
+import CSVImport from "@/pages/CSVImport";
+import ActivityLogs from "@/pages/ActivityLogs";
+import Reports from "@/pages/Reports";
+import MasterTable from "@/pages/MasterTable";
+import ManageAdmins from "@/pages/ManageAdmins";
+import { Spinner } from "@/components/ui";
+
+const PAGES: Record<Page, React.ComponentType> = {
+  dashboard: Dashboard,
+  students: Students,
+  attendance: Attendance,
+  hostels: Hostels,
+  staff: Staff,
+  lostitems: LostFound,
+  "csv-import": CSVImport,
+  "activity-logs": ActivityLogs,
+  reports: Reports,
+  "master-table": MasterTable,
+  "manage-admins": ManageAdmins,
+};
+
+function AppInner() {
+  const { user, isLoading } = useAuth();
+  const [page, setPage] = useState<Page>("dashboard");
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0f0f11]">
+        <div className="text-center">
+          <Spinner size={32} className="mx-auto mb-3" />
+          <p className="text-slate-500 text-sm">Loading CampusOps…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) return <Login />;
+
+  const PageComponent = PAGES[page] || Dashboard;
+
+  return (
+    <Layout page={page} setPage={setPage}>
+      <PageComponent />
+    </Layout>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppInner />
+    </AuthProvider>
+  );
+}
