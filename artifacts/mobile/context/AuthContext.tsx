@@ -3,7 +3,8 @@ import React, { createContext, useContext, useEffect, useState, useCallback, Rea
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// Production URL — used for native app builds.
+// ⬇ UPDATE THIS after Railway deploys — replace with your actual Railway domain.
+// Example: "https://campusops-abc123.up.railway.app/api"
 const PROD_API = "https://accom-iitm-production.up.railway.app/api";
 
 // On Expo web (browser), Metro dev server proxies /api → localhost:8080,
