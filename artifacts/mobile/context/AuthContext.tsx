@@ -3,14 +3,15 @@ import React, { createContext, useContext, useEffect, useState, useCallback, Rea
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// Production URL — always used when no explicit override is set.
-// Update this to your Railway URL after deploying the backend.
+// Production URL — used for native app builds.
 const PROD_API = "https://accom-iitm-production.up.railway.app/api";
 
+// On Expo web (browser), Metro dev server proxies /api → localhost:8080,
+// so we use a relative path. On native devices, fall back to the Railway URL.
 export const API_BASE: string =
   (process.env.EXPO_PUBLIC_API_URL) ||
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
-  PROD_API;
+  (Platform.OS === "web" ? "/api" : PROD_API);
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type UserRole =
