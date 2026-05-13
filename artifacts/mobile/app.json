@@ -54,7 +54,7 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://accom-iitm26.onrender.com/api",
+      "apiUrl": "https://campusops-api-production.up.railway.app/api",
       "router": {
         "origin": "https://localhost",
         "headOrigin": "https://localhost"
