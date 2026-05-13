@@ -4,7 +4,8 @@ import path from "path";
 const url = process.env.DATABASE_URL;
 
 if (!url) {
-  throw new Error("DATABASE_URL must be set.");
+  console.error("[drizzle] DATABASE_URL is not set — schema push will be skipped.");
+  process.exit(0); // exit cleanly so the build/start command chain continues
 }
 
 export default defineConfig({

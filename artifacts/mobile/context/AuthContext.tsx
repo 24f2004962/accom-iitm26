@@ -3,9 +3,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, Rea
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-// ⬇ UPDATE THIS after Railway deploys — replace with your actual Railway domain.
-// Example: "https://campusops-abc123.up.railway.app/api"
-const PROD_API = "https://accom-iitm-production.up.railway.app/api";
+const PROD_API = "https://accom-iitm26.onrender.com/api";
 
 // Priority:
 // 1. Explicit env override (EXPO_PUBLIC_API_URL)

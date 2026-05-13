@@ -1,7 +1,4 @@
-// ✅ Set EXPO_PUBLIC_API_URL env var (in Replit secrets or EAS build env)
-// to your Railway deployed URL, e.g. "https://campusops.up.railway.app/api"
-// If not set, falls back to the value below.
-const PROD_API = process.env.EXPO_PUBLIC_API_URL || "https://accom-iitm-production.up.railway.app/api";
+const PROD_API = process.env.EXPO_PUBLIC_API_URL || "https://accom-iitm26.onrender.com/api";
 
 module.exports = function applyAppConfig({ config }) {
   const proxyUrl = process.env.EXPO_PUBLIC_WEB_ORIGIN || "https://localhost";

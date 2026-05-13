@@ -8,7 +8,7 @@
       "developmentClient": true,
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://zip-12--vpahaddevbhoomi.replit.app/api"
+        "EXPO_PUBLIC_API_URL": "https://accom-iitm26.onrender.com/api"
       }
     },
     "preview": {
@@ -18,7 +18,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://zip-12--vpahaddevbhoomi.replit.app/api"
+        "EXPO_PUBLIC_API_URL": "https://accom-iitm26.onrender.com/api"
       }
     },
     "production": {
@@ -26,7 +26,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://zip-12--vpahaddevbhoomi.replit.app/api"
+        "EXPO_PUBLIC_API_URL": "https://accom-iitm26.onrender.com/api"
       }
     }
   },
