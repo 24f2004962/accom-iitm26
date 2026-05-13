@@ -5,10 +5,12 @@ import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import crypto from "crypto";
 
-const JWT_SECRET = process.env.JWT_SECRET;
+let JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
-  console.error("[SECURITY] JWT_SECRET env var is not set! Set a strong secret before deploying to production.");
-  process.exit(1);
+  // Generate a random secret so the server starts. Tokens will be invalidated
+  // on restart. Set JWT_SECRET in Railway Variables for stable auth.
+  JWT_SECRET = crypto.randomBytes(32).toString("hex");
+  console.warn("[SECURITY] JWT_SECRET env var is not set — using a random ephemeral secret. All sessions will reset on restart. Set JWT_SECRET in your environment.");
 }
 
 export function generateId(): string {
