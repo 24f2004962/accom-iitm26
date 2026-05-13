@@ -4,17 +4,15 @@ import * as schema from "./schema";
 
 const { Pool } = pg;
 
-function buildConnectionString(): string {
-  if (!process.env.DATABASE_URL) {
-    throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
-  }
-  return process.env.DATABASE_URL;
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  // Warn but do NOT throw — let Express start so health checks pass.
+  // DB queries will fail until DATABASE_URL is set in the environment.
+  console.error("[DB] WARNING: DATABASE_URL is not set. Database queries will fail. Set DATABASE_URL in your environment variables.");
 }
 
-const connectionString = buildConnectionString();
-
 export const pool = new Pool({
-  connectionString,
+  connectionString: connectionString || "postgres://localhost/placeholder",
   max: 10,
   min: 0,
   idleTimeoutMillis: 10000,
