@@ -17,6 +17,16 @@ const WEB_ADMIN_DIST = path.resolve(process.cwd(), "artifacts/web-admin/dist");
 
 const app: Express = express();
 
+// ✅ HEALTH CHECK — registered FIRST, before all middleware, so Railway/load
+// balancers always get a response even if other parts of the app are still
+// initialising or misconfigured.
+app.get("/api/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+app.get("/health", (_req, res) => {
+  res.json({ status: "ok" });
+});
+
 // ✅ Trust proxy (important for Replit)
 app.set("trust proxy", 1);
 
@@ -94,13 +104,6 @@ app.use("/api", generalLimiter);
 
 // ✅ MAIN ROUTER
 app.use("/api", router);
-
-// ================= HEALTH =================
-
-// ✅ FIXED HEALTH ROUTE
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
 
 // ================= WEB ADMIN STATIC FILES (production only) =================
 
