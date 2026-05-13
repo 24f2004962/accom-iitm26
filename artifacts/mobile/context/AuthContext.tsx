@@ -7,12 +7,14 @@ import { Platform } from "react-native";
 // Example: "https://campusops-abc123.up.railway.app/api"
 const PROD_API = "https://accom-iitm-production.up.railway.app/api";
 
-// On Expo web (browser), Metro dev server proxies /api → localhost:8080,
-// so we use a relative path. On native devices, fall back to the Railway URL.
+// Priority:
+// 1. Explicit env override (EXPO_PUBLIC_API_URL)
+// 2. app.json extra.apiUrl (set to current backend URL per environment)
+// 3. PROD_API fallback for native builds without config
 export const API_BASE: string =
-  (process.env.EXPO_PUBLIC_API_URL) ||
+  (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
   (Constants.expoConfig?.extra?.apiUrl as string | undefined) ||
-  (Platform.OS === "web" ? "/api" : PROD_API);
+  PROD_API;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 export type UserRole =
