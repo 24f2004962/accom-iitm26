@@ -1,6 +1,5 @@
 import cluster from "cluster";
 import { cpus } from "os";
-import { spawn } from "child_process";
 import app from "./app.js";
 import { autoSeed } from "./autoSeed.js";
 import { productionSeed } from "./productionSeed.js";

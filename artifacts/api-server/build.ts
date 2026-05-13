@@ -62,6 +62,9 @@ async function buildAll() {
     outfile: path.resolve(distDir, "index.cjs"),
     define: {
       "process.env.NODE_ENV": '"production"',
+      // import.meta.dirname is empty in CJS output — map to Node's __dirname
+      "import.meta.dirname": "__dirname",
+      "import.meta.filename": "__filename",
     },
     minify: true,
     external: externals,
