@@ -9,11 +9,14 @@ import compression from "compression";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
 import path from "path";
+import { existsSync } from "fs";
 import router from "./routes/index.js";
 
-// process.cwd() is /app in Railway (WORKDIR) and the workspace root in dev.
-// Works correctly in both ESM (tsx dev) and CJS (esbuild production bundle).
-const WEB_ADMIN_DIST = path.resolve(process.cwd(), "artifacts/web-admin/dist");
+// import.meta.dirname resolves to the directory of THIS file at runtime.
+// In dev (tsx ESM):  artifacts/api-server/src/
+// In prod (esbuild CJS bundle): artifacts/api-server/dist/
+// Either way, ../../web-admin/dist correctly points to artifacts/web-admin/dist/
+const WEB_ADMIN_DIST = path.resolve(import.meta.dirname, "../../web-admin/dist");
 
 const app: Express = express();
 
@@ -115,10 +118,18 @@ app.use("/api", router);
 // ================= WEB ADMIN STATIC FILES (production only) =================
 
 if (process.env.NODE_ENV === "production") {
-  app.use(express.static(WEB_ADMIN_DIST));
-  app.get("/{*splat}", (_req, res) => {
-    res.sendFile(path.join(WEB_ADMIN_DIST, "index.html"));
-  });
+  const distIndexHtml = path.join(WEB_ADMIN_DIST, "index.html");
+  if (existsSync(distIndexHtml)) {
+    app.use(express.static(WEB_ADMIN_DIST));
+    app.get("/{*splat}", (_req, res) => {
+      res.sendFile(distIndexHtml);
+    });
+  } else {
+    console.warn("[web-admin] dist not found at", WEB_ADMIN_DIST, "— serving API only");
+    app.get("/", (_req, res) => {
+      res.json({ message: "CampusOps API Running 🚀", webAdmin: "not built" });
+    });
+  }
 } else {
   app.get("/", (_req, res) => {
     res.json({ message: "CampusOps API Running 🚀" });
