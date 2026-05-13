@@ -43,11 +43,12 @@ export async function productionSeed() {
 
   // ── 2. Demo staff (keep login accounts) ──────────────────────────────────
   const demoStaff = [
-    { email:"superadmin@iitm.ac.in", name:"Super Admin", role:"superadmin" },
-    { email:"admin@iitm.ac.in",      name:"Admin IITM",  role:"admin"      },
-    { email:"coordinator@iitm.ac.in",name:"Ravi Coord",  role:"coordinator"},
-    { email:"volunteer@iitm.ac.in",  name:"Priya Vol",   role:"volunteer"  },
-    { email:"volunteer2@iitm.ac.in", name:"Suresh Vol",  role:"volunteer"  },
+    { email:"superadmin@iitm.ac.in", name:"Super Admin",  role:"superadmin" },
+    { email:"admin@iitm.ac.in",      name:"Admin IITM",   role:"admin"      },
+    { email:"coordinator@iitm.ac.in",name:"Ravi Coord",   role:"coordinator"},
+    { email:"volunteer@iitm.ac.in",  name:"Priya Vol",    role:"volunteer"  },
+    { email:"volunteer2@iitm.ac.in", name:"Suresh Vol",   role:"volunteer"  },
+    { email:"student@iitm.ac.in",    name:"Demo Student", role:"student"    },
   ];
   for (const u of demoStaff) {
     await db.insert(usersTable).values({

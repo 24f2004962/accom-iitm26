@@ -54,10 +54,10 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiUrl": "https://020a9852-e07c-4e63-8aeb-b06b451dc8fe-00-bfzqgj8zh6mg.sisko.replit.dev:8080/api",
+      "apiUrl": "https://accom-iitm26.onrender.com/api",
       "router": {
-        "origin": "https://020a9852-e07c-4e63-8aeb-b06b451dc8fe-00-bfzqgj8zh6mg.sisko.replit.dev:8099",
-        "headOrigin": "https://020a9852-e07c-4e63-8aeb-b06b451dc8fe-00-bfzqgj8zh6mg.sisko.replit.dev:8099"
+        "origin": "https://localhost",
+        "headOrigin": "https://localhost"
       },
       "eas": {
         "projectId": "0533180b-87ac-4b76-82a8-c48de7d426c7"
