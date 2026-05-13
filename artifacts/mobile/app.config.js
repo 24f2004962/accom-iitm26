@@ -1,4 +1,4 @@
-const PROD_API = process.env.EXPO_PUBLIC_API_URL || "https://accom-iitm26.onrender.com/api";
+const PROD_API = process.env.EXPO_PUBLIC_API_URL || "https://accom-iitm-production.up.railway.app/api";
 
 module.exports = function applyAppConfig({ config }) {
   const proxyUrl = process.env.EXPO_PUBLIC_WEB_ORIGIN || "https://localhost";
