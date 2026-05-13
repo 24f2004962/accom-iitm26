@@ -173,7 +173,29 @@ export async function initSchema() {
         created_at TIMESTAMP DEFAULT NOW() NOT NULL
       );
     `);
-    console.log("[schema] ✅ Schema ready.");
+
+    // ── Column migrations (safe for existing DBs) ──────────────────────────
+    // These ALTER TABLE … ADD COLUMN IF NOT EXISTS statements add columns that
+    // were introduced after the initial schema deploy.  They are fully idempotent.
+    await client.query(`
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS contact_number TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS area TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS gender TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS attendance_status TEXT DEFAULT 'not_entered';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS assigned_hostel_ids TEXT DEFAULT '[]';
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS last_active_at TIMESTAMP;
+      ALTER TABLE announcements ADD COLUMN IF NOT EXISTS priority TEXT DEFAULT 'normal';
+      ALTER TABLE announcements ADD COLUMN IF NOT EXISTS hostel_id TEXT;
+      ALTER TABLE lost_items ADD COLUMN IF NOT EXISTS location TEXT;
+      ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS mess_card BOOLEAN DEFAULT FALSE;
+      ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS mess_card_given_at TIMESTAMP;
+      ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS mess_card_revoked_at TIMESTAMP;
+      ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS mattress_submitted BOOLEAN DEFAULT FALSE;
+      ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS bedsheet_submitted BOOLEAN DEFAULT FALSE;
+      ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS pillow_submitted BOOLEAN DEFAULT FALSE;
+      ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS updated_by TEXT;
+    `);
+    console.log("[schema] ✅ Schema ready (migrations applied).");
   } catch (err: any) {
     console.error("[schema] Init error:", err.message);
   } finally {
