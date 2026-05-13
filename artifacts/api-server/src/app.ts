@@ -19,12 +19,19 @@ const app: Express = express();
 
 // ✅ HEALTH CHECK — registered FIRST, before all middleware, so Railway/load
 // balancers always get a response even if other parts of the app are still
-// initialising or misconfigured.
+// initialising or misconfigured. Also used as keep-alive ping target.
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ status: "ok", ts: Date.now() });
 });
 app.get("/health", (_req, res) => {
-  res.json({ status: "ok" });
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ status: "ok", ts: Date.now() });
+});
+// Warm-up / keep-alive endpoint — lightweight DB ping to prevent cold starts
+app.get("/api/ping", async (_req, res) => {
+  res.setHeader("Cache-Control", "no-store");
+  res.json({ pong: true, ts: Date.now() });
 });
 
 // ✅ Trust proxy (important for Replit)

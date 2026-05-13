@@ -89,6 +89,7 @@ packages = ["eas-cli"]
 CI = "1"
 EXPO_NO_DOTENV = "1"
 AUTO_SEED = "false"
+SEED_REAL_DATA = "false"
 
 [[ports]]
 localPort = 5000
