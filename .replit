@@ -56,7 +56,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/mobile && CI=false pnpm exec expo start --web --tunnel --port 8099"
+args = "cd artifacts/mobile && CI=false EXPO_PUBLIC_API_URL=https://$REPLIT_DEV_DOMAIN/api pnpm exec expo start --web --tunnel --port 8099"
 waitForPort = 8099
 
 [[workflows.workflow]]
@@ -90,6 +90,7 @@ CI = "1"
 EXPO_NO_DOTENV = "1"
 AUTO_SEED = "false"
 SEED_REAL_DATA = "false"
+JWT_SECRET = "f6abfd33b3d2b80c0f5f95a966c729a4a4475f307bd087b3a77911a4c4924327"
 
 [[ports]]
 localPort = 5000
