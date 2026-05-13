@@ -91,7 +91,7 @@ export default function Layout({
         {visibleNav.map((item) => <NavItem key={item.id} item={item} />)}
       </nav>
 
-      <div className="p-3 border-t border-white/8">
+      <div className="p-3 border-t border-white/8 space-y-2">
         <div className={cn("flex items-center gap-3", collapsed && !mobile && "justify-center")}>
           <div className="w-8 h-8 bg-purple-600/30 rounded-full flex items-center justify-center flex-shrink-0 border border-purple-500/30">
             <span className="text-purple-400 text-xs font-bold">
@@ -110,6 +110,11 @@ export default function Layout({
             </button>
           )}
         </div>
+        {(!collapsed || mobile) && (
+          <p className="text-[9px] text-slate-700 text-center leading-tight">
+            Made with ♥ by <span className="text-slate-500">Kartik Chilkoti</span>
+          </p>
+        )}
       </div>
     </div>
   );

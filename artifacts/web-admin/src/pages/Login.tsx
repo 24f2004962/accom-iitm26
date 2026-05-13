@@ -109,6 +109,11 @@ export default function Login() {
             </div>
           </div>
         </div>
+
+        <p className="text-center text-[10px] text-slate-700 mt-5">
+          Made with ♥ by{" "}
+          <span className="text-slate-500 font-medium">Kartik Chilkoti</span>
+        </p>
       </div>
     </div>
   );
