@@ -10,10 +10,11 @@ export default function Students() {
   const [messFilter, setMessFilter] = useState("");
   const [selected, setSelected] = useState<any>(null);
 
-  const { data: students = [], isLoading } = useQuery({
+  const { data: studentsData, isLoading } = useQuery({
     queryKey: ["students"],
-    queryFn: () => apiFetch<any[]>("/students?limit=500"),
+    queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"),
   });
+  const students: any[] = studentsData?.students ?? [];
 
   const { data: hostels = [] } = useQuery({
     queryKey: ["hostels"],

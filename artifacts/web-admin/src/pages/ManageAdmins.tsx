@@ -63,7 +63,7 @@ export default function ManageAdmins() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: string) => apiFetch(`/students/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch(`/admin/admin-users/${id}`, { method: "DELETE" }),
     onSuccess: () => refetchStaff(),
   });
 

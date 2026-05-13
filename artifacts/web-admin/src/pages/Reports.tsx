@@ -29,19 +29,20 @@ export default function Reports() {
 
   const { data: summary } = useQuery({ queryKey: ["reports-summary"], queryFn: () => apiFetch<any>("/reports/summary") });
   const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
-  const { data: students = [] } = useQuery({ queryKey: ["students"], queryFn: () => apiFetch<any[]>("/students?limit=1000") });
+  const { data: studentsData } = useQuery({ queryKey: ["students"], queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000") });
+  const students: any[] = studentsData?.students ?? [];
   const { data: attStats } = useQuery({ queryKey: ["att-stats"], queryFn: () => apiFetch<any>("/attendance/stats"), refetchInterval: 30000 });
 
   const hostelCountMap: Record<string, number> = {};
-  (students as any[]).forEach((s: any) => { if (s.hostelId) hostelCountMap[s.hostelId] = (hostelCountMap[s.hostelId] || 0) + 1; });
+  students.forEach((s: any) => { if (s.hostelId) hostelCountMap[s.hostelId] = (hostelCountMap[s.hostelId] || 0) + 1; });
 
   const hostelBar = (hostels as any[]).slice(0, 10).map((h: any) => ({
     name: h.name?.substring(0, 8) || h.id,
-    students: hostelCountMap[h.id] || 0,
+    students: hostelCountMap[h.id] || h.studentCount || 0,
   }));
 
   const messMap: Record<string, number> = {};
-  (students as any[]).forEach((s: any) => { if (s.assignedMess) messMap[s.assignedMess] = (messMap[s.assignedMess] || 0) + 1; });
+  students.forEach((s: any) => { if (s.assignedMess) messMap[s.assignedMess] = (messMap[s.assignedMess] || 0) + 1; });
   const messPie = Object.entries(messMap).map(([name, value]) => ({ name, value }));
 
   const attPie = [

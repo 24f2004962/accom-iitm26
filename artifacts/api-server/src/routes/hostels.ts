@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, hostelsTable, emergencyContactsTable, usersTable } from "@workspace/db";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, count } from "drizzle-orm";
 import { requireAuth, requireAdmin, generateId, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
@@ -39,7 +39,16 @@ router.get("/", requireAuth, async (req, res) => {
     hostels = await db.select().from(hostelsTable).where(inArray(hostelsTable.id, scoped));
   }
 
-  res.json(hostels.map(h => ({ ...h, createdAt: h.createdAt.toISOString() })));
+  const hostelIds = hostels.map(h => h.id);
+  const studentCounts = hostelIds.length
+    ? await db.select({ hostelId: usersTable.hostelId, cnt: count() })
+        .from(usersTable)
+        .where(inArray(usersTable.hostelId, hostelIds))
+        .groupBy(usersTable.hostelId)
+    : [];
+  const countMap = new Map(studentCounts.map(r => [r.hostelId, Number(r.cnt)]));
+
+  res.json(hostels.map(h => ({ ...h, studentCount: countMap.get(h.id) ?? 0, createdAt: h.createdAt.toISOString() })));
 });
 
 // GET /api/hostels/:id

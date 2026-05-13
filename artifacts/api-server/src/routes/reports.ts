@@ -5,6 +5,7 @@ import {
   hostelsTable,
   announcementsTable,
   timeLogsTable,
+  lostItemsTable,
 } from "@workspace/db";
 import { eq, count, sql, inArray, and } from "drizzle-orm";
 import {
@@ -66,11 +67,17 @@ router.get("/summary", requireAdmin, async (req: AuthRequest, res) => {
     ? [{ count: scopedHostelIds.length } as { count: number }]
     : await db.select({ count: count() }).from(hostelsTable);
   const [announcementsCount] = await db.select({ count: count() }).from(announcementsTable);
+  const [lostItemsCount] = await db.select({ count: count() }).from(lostItemsTable);
+  const [staffCount] = await db.select({ count: count() }).from(usersTable).where(
+    sql`${usersTable.role} IN ('volunteer','coordinator','admin','superadmin')`
+  );
 
   res.json({
     totalStudents: Number(studentsCount.count),
     totalHostels: Number(hostelsCount.count),
     totalAnnouncements: Number(announcementsCount.count),
+    totalLostItems: Number(lostItemsCount.count),
+    totalStaff: Number(staffCount.count),
     recentActivity: [],
   });
 });

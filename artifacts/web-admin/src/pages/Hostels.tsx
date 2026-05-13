@@ -9,13 +9,14 @@ export default function Hostels() {
     queryKey: ["hostels-detail"],
     queryFn: () => apiFetch<any[]>("/hostels"),
   });
-  const { data: students = [] } = useQuery({
+  const { data: studentsData } = useQuery({
     queryKey: ["students"],
-    queryFn: () => apiFetch<any[]>("/students?limit=1000"),
+    queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"),
   });
+  const studentList: any[] = studentsData?.students ?? [];
 
   const hostelCountMap: Record<string, number> = {};
-  (students as any[]).forEach((s: any) => {
+  studentList.forEach((s: any) => {
     if (s.hostelId) hostelCountMap[s.hostelId] = (hostelCountMap[s.hostelId] || 0) + 1;
   });
 

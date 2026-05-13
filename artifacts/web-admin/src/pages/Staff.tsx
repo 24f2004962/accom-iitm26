@@ -36,7 +36,7 @@ export default function Staff() {
   });
 
   const deleteMut = useMutation({
-    mutationFn: (id: string) => apiFetch(`/students/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) => apiFetch(`/admin/admin-users/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["all-staff"] }),
   });
 

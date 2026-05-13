@@ -11,10 +11,11 @@ export default function MasterTable() {
   const [page, setPage] = useState(0);
   const PAGE_SIZE = 50;
 
-  const { data: students = [], isLoading } = useQuery({
+  const { data: studentsData, isLoading } = useQuery({
     queryKey: ["master-students"],
-    queryFn: () => apiFetch<any[]>("/students?limit=2000"),
+    queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"),
   });
+  const students: any[] = studentsData?.students ?? [];
   const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
 
   const hostelMap = useMemo(() => {
