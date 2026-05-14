@@ -3,14 +3,14 @@ import { cn } from "./ui";
 import { useAuth } from "@/context/AuthContext";
 import {
   LayoutDashboard, Users, Building2, UserCog,
-  FileText, Upload, Activity, BarChart3, PackageSearch,
+  FileText, Upload, Activity, BarChart3, Megaphone,
   LogOut, Menu, X, ChevronRight, GraduationCap,
   UtensilsCrossed, Package,
 } from "lucide-react";
 
 export type Page =
   | "dashboard" | "students" | "mess" | "inventory" | "hostels"
-  | "staff" | "lostitems" | "csv-import" | "activity-logs"
+  | "staff" | "announcements" | "csv-import" | "activity-logs"
   | "reports" | "master-table" | "manage-admins";
 
 const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] }[] = [
@@ -20,7 +20,7 @@ const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] 
   { id: "inventory",     label: "Inventory",       icon: Package },
   { id: "hostels",       label: "Hostels",         icon: Building2 },
   { id: "staff",         label: "Staff",           icon: UserCog },
-  { id: "lostitems",     label: "Lost & Found",    icon: PackageSearch },
+  { id: "announcements", label: "Announcements",   icon: Megaphone },
   { id: "master-table",  label: "Master Table",    icon: GraduationCap, roles: ["superadmin", "admin"] },
   { id: "csv-import",    label: "CSV Import",      icon: Upload, roles: ["superadmin"] },
   { id: "activity-logs", label: "Activity Logs",   icon: Activity },

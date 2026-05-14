@@ -9,7 +9,7 @@ import Mess from "@/pages/Mess";
 import Inventory from "@/pages/Inventory";
 import Staff from "@/pages/Staff";
 import Hostels from "@/pages/Hostels";
-import LostFound from "@/pages/LostFound";
+import Announcements from "@/pages/Announcements";
 import CSVImport from "@/pages/CSVImport";
 import ActivityLogs from "@/pages/ActivityLogs";
 import Reports from "@/pages/Reports";
@@ -24,7 +24,7 @@ const PAGES: Record<Page, React.ComponentType> = {
   inventory: Inventory,
   hostels: Hostels,
   staff: Staff,
-  lostitems: LostFound,
+  announcements: Announcements,
   "csv-import": CSVImport,
   "activity-logs": ActivityLogs,
   reports: Reports,

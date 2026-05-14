@@ -20,6 +20,11 @@ input, select, textarea {
   font-family: inherit;
 }
 
+select option {
+  background: #13131a;
+  color: #e2e8f0;
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
 .animate-spin { animation: spin 1s linear infinite; }
 
