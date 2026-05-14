@@ -18,12 +18,14 @@ export default function Students() {
   const { data: studentsData, isLoading } = useQuery({
     queryKey: ["students"],
     queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"),
+    refetchInterval: 30000,
   });
   const students: any[] = studentsData?.students ?? [];
 
   const { data: hostels = [] } = useQuery({
     queryKey: ["hostels"],
     queryFn: () => apiFetch<any[]>("/hostels"),
+    refetchInterval: 60000,
   });
 
   const assignMut = useMutation({

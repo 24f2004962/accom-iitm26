@@ -27,9 +27,9 @@ const PDF_EXPORTS = [
 export default function Reports() {
   const [attDate, setAttDate] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  const { data: summary } = useQuery({ queryKey: ["reports-summary"], queryFn: () => apiFetch<any>("/reports/summary") });
-  const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
-  const { data: studentsData } = useQuery({ queryKey: ["students"], queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000") });
+  const { data: summary } = useQuery({ queryKey: ["reports-summary"], queryFn: () => apiFetch<any>("/reports/summary"), refetchInterval: 30000 });
+  const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels"), refetchInterval: 60000 });
+  const { data: studentsData } = useQuery({ queryKey: ["students"], queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"), refetchInterval: 60000 });
   const students: any[] = studentsData?.students ?? [];
   const { data: attStats } = useQuery({ queryKey: ["att-stats"], queryFn: () => apiFetch<any>("/attendance/stats"), refetchInterval: 30000 });
 
@@ -76,7 +76,7 @@ export default function Reports() {
             <BarChart data={hostelBar} barSize={22}>
               <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 10 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} />
+              <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#94a3b8" }} />
               <Bar dataKey="students" radius={[4, 4, 0, 0]}>
                 {hostelBar.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
               </Bar>
@@ -91,7 +91,7 @@ export default function Reports() {
               <Pie data={attPie} cx="50%" cy="50%" outerRadius={80} innerRadius={50} paddingAngle={3} dataKey="value">
                 {attPie.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
               </Pie>
-              <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} />
+              <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#94a3b8" }} />
               <Legend wrapperStyle={{ fontSize: 11, color: "#94a3b8" }} />
             </PieChart>
           </ResponsiveContainer>
@@ -105,7 +105,7 @@ export default function Reports() {
             <BarChart data={messPie} barSize={32}>
               <XAxis dataKey="name" tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
-              <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} />
+              <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#94a3b8" }} />
               <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>

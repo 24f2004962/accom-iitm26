@@ -5,7 +5,7 @@ import { GraduationCap, Eye, EyeOff, AlertCircle } from "lucide-react";
 export default function Login() {
   const { login } = useAuth();
   const [email, setEmail] = useState("superadmin@iitm.ac.in");
-  const [password, setPassword] = useState("123456");
+  const [password, setPassword] = useState("qwerty");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -95,12 +95,17 @@ export default function Login() {
           </form>
 
           <div className="mt-5 pt-4 border-t border-white/6">
-            <p className="text-xs text-slate-600 text-center mb-2">Demo credentials (password: 123456)</p>
+            <p className="text-xs text-slate-600 text-center mb-2">Quick fill · Superadmin: <span className="text-slate-500 font-mono">qwerty</span> · Others: <span className="text-slate-500 font-mono">123456</span></p>
             <div className="grid grid-cols-2 gap-1.5">
-              {["superadmin", "admin", "coordinator", "volunteer"].map((r) => (
+              {[
+                { role: "superadmin", pw: "qwerty" },
+                { role: "admin", pw: "123456" },
+                { role: "coordinator", pw: "123456" },
+                { role: "volunteer", pw: "123456" },
+              ].map(({ role: r, pw }) => (
                 <button
                   key={r}
-                  onClick={() => { setEmail(`${r}@iitm.ac.in`); setPassword("123456"); }}
+                  onClick={() => { setEmail(`${r}@iitm.ac.in`); setPassword(pw); }}
                   className="text-[10px] text-slate-500 hover:text-purple-400 hover:bg-purple-500/8 border border-white/6 rounded-lg py-1.5 px-2 transition-all capitalize"
                 >
                   {r}

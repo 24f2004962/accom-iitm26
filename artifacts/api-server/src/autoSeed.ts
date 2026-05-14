@@ -41,14 +41,15 @@ export async function autoSeed() {
       { email: "volunteer@iitm.ac.in", name: "Priya Volunteer", role: "volunteer", hostelId: hostelId1, area: "Operations", assignedHostelIds: "[]" },
       { email: "coordinator@iitm.ac.in", name: "Ravi Coordinator", role: "coordinator", hostelId: null, area: "Administration", assignedHostelIds: JSON.stringify([hostelId1, hostelId2]) },
       { email: "admin@iitm.ac.in", name: "Admin IITM", role: "admin", hostelId: null, area: null, assignedHostelIds: "[]" },
-      { email: "superadmin@iitm.ac.in", name: "Super Admin", role: "superadmin", hostelId: null, area: null, assignedHostelIds: "[]" },
+      { email: "superadmin@iitm.ac.in", name: "Super Admin", role: "superadmin", hostelId: null, area: null, assignedHostelIds: "[]", password: "qwerty" },
       { email: "volunteer2@iitm.ac.in", name: "Suresh Volunteer", role: "volunteer", hostelId: hostelId2, area: "Operations", assignedHostelIds: "[]" },
     ];
 
     for (const u of staffAccounts) {
+      const pw = (u as any).password || "123456";
       await db.insert(usersTable).values({
         id: generateId(), name: u.name, email: u.email,
-        passwordHash: await hashPassword("123456"), role: u.role,
+        passwordHash: await hashPassword(pw), role: u.role,
         hostelId: u.hostelId ?? undefined,
         area: u.area ?? undefined,
         assignedHostelIds: u.assignedHostelIds,

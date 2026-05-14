@@ -88,7 +88,7 @@ packages = ["eas-cli"]
 [userenv.shared]
 CI = "1"
 EXPO_NO_DOTENV = "1"
-AUTO_SEED = "false"
+AUTO_SEED = "true"
 SEED_REAL_DATA = "false"
 JWT_SECRET = "f6abfd33b3d2b80c0f5f95a966c729a4a4475f307bd087b3a77911a4c4924327"
 

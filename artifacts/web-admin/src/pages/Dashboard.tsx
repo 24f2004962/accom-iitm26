@@ -120,7 +120,8 @@ export default function Dashboard() {
                 <YAxis tick={{ fill: "#64748b", fontSize: 11 }} axisLine={false} tickLine={false} />
                 <Tooltip
                   contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }}
-                  labelStyle={{ color: "#e2e8f0" }}
+                  labelStyle={{ color: "#94a3b8" }}
+                  itemStyle={{ color: "#e2e8f0" }}
                 />
                 <Bar dataKey="students" fill="#7c3aed" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -140,7 +141,7 @@ export default function Dashboard() {
                 <Pie data={pieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80} paddingAngle={3} dataKey="value">
                   {pieData.map((_, i) => <Cell key={i} fill={COLORS[i]} />)}
                 </Pie>
-                <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} />
+                <Tooltip contentStyle={{ background: "#1e1e2e", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, fontSize: 12 }} itemStyle={{ color: "#e2e8f0" }} labelStyle={{ color: "#94a3b8" }} />
                 <Legend iconSize={8} wrapperStyle={{ fontSize: 11, color: "#94a3b8" }} />
               </PieChart>
             </ResponsiveContainer>

@@ -14,9 +14,10 @@ export default function MasterTable() {
   const { data: studentsData, isLoading } = useQuery({
     queryKey: ["master-students"],
     queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"),
+    refetchInterval: 60000,
   });
   const students: any[] = studentsData?.students ?? [];
-  const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
+  const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels"), refetchInterval: 60000 });
 
   const hostelMap = useMemo(() => {
     const m: Record<string, string> = {};
