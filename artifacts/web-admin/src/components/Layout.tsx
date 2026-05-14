@@ -2,20 +2,22 @@ import React, { useState } from "react";
 import { cn } from "./ui";
 import { useAuth } from "@/context/AuthContext";
 import {
-  LayoutDashboard, Users, ClipboardCheck, Building2, UserCog,
+  LayoutDashboard, Users, Building2, UserCog,
   FileText, Upload, Activity, BarChart3, PackageSearch,
   LogOut, Menu, X, ChevronRight, GraduationCap,
+  UtensilsCrossed, Package,
 } from "lucide-react";
 
 export type Page =
-  | "dashboard" | "students" | "attendance" | "hostels"
+  | "dashboard" | "students" | "mess" | "inventory" | "hostels"
   | "staff" | "lostitems" | "csv-import" | "activity-logs"
   | "reports" | "master-table" | "manage-admins";
 
 const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] }[] = [
   { id: "dashboard",     label: "Dashboard",      icon: LayoutDashboard },
   { id: "students",      label: "Students",        icon: Users },
-  { id: "attendance",    label: "Attendance",      icon: ClipboardCheck },
+  { id: "mess",          label: "Mess Cards",      icon: UtensilsCrossed },
+  { id: "inventory",     label: "Inventory",       icon: Package },
   { id: "hostels",       label: "Hostels",         icon: Building2 },
   { id: "staff",         label: "Staff",           icon: UserCog },
   { id: "lostitems",     label: "Lost & Found",    icon: PackageSearch },

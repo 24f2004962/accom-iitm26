@@ -5,7 +5,8 @@ import Layout, { type Page } from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
 import Students from "@/pages/Students";
-import Attendance from "@/pages/Attendance";
+import Mess from "@/pages/Mess";
+import Inventory from "@/pages/Inventory";
 import Staff from "@/pages/Staff";
 import Hostels from "@/pages/Hostels";
 import LostFound from "@/pages/LostFound";
@@ -19,7 +20,8 @@ import { Spinner } from "@/components/ui";
 const PAGES: Record<Page, React.ComponentType> = {
   dashboard: Dashboard,
   students: Students,
-  attendance: Attendance,
+  mess: Mess,
+  inventory: Inventory,
   hostels: Hostels,
   staff: Staff,
   lostitems: LostFound,

@@ -236,9 +236,9 @@ export default function HomeScreen() {
   const { data: allStaff = [] } = useQuery<any[]>({
     queryKey: ["staff-all-home"],
     queryFn: () => safe(() => request("/staff/all"), []),
-    enabled: isVolunteer,
-    refetchInterval: 10000,
-    staleTime: 4000,
+    enabled: isVolunteer || isCoordinator,
+    refetchInterval: 5000,
+    staleTime: 3000,
     placeholderData: keepPreviousData,
     retry: 1,
   });
@@ -683,6 +683,51 @@ export default function HomeScreen() {
                 <Feather name="credit-card" size={15} color="#fff" />
                 <Text style={styles.actionBtnText}>Manage Mess Cards</Text>
               </Pressable>
+            </SectionCard>
+
+            {/* Fellow Working Members */}
+            <SectionCard
+              icon="users"
+              iconColor="#8b5cf6"
+              title="Fellow Working Members"
+              sub={`Live · updates every 5s`}
+              onViewAll={() => go("/admin/staff-status")}
+            >
+              {fellowStaff.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No other staff currently assigned</Text>
+                </View>
+              ) : (
+                fellowStaff.slice(0, 6).map((s: any) => (
+                  <View key={s.id} style={[styles.fellowRow, { borderBottomColor: theme.border }]}>
+                    <View style={[styles.fellowDot, { backgroundColor: s.isOnline ? "#22c55e" : "#94a3b8" }]} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.fellowName, { color: theme.text }]} numberOfLines={1}>{s.name}</Text>
+                      <Text style={[styles.fellowMeta, { color: theme.textSecondary }]} numberOfLines={1}>
+                        {(s.role || "staff").toString().toUpperCase()} · {s.isOnline ? "Online" : "Offline"}
+                      </Text>
+                    </View>
+                    <View style={styles.fellowActions}>
+                      {s.phone ? (
+                        <Pressable
+                          onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${s.phone}`); }}
+                          style={[styles.fellowBtn, { backgroundColor: "#22c55e15" }]}
+                          hitSlop={8}
+                        >
+                          <Feather name="phone-call" size={13} color="#22c55e" />
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        onPress={() => { Haptics.selectionAsync(); go("/admin/staff-status"); }}
+                        style={[styles.fellowBtn, { backgroundColor: theme.tint + "18" }]}
+                        hitSlop={8}
+                      >
+                        <Feather name="eye" size={13} color={theme.tint} />
+                      </Pressable>
+                    </View>
+                  </View>
+                ))
+              )}
             </SectionCard>
 
             {/* Quick Grid */}
