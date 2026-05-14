@@ -5,10 +5,9 @@ import { PageHeader, Card, Table, Badge, Button, Modal, Input, Select, EmptyStat
 import { PackageSearch, Plus, MapPin, AlertCircle } from "lucide-react";
 
 const STATUS_MAP: Record<string, [string, "yellow" | "green" | "blue" | "gray"]> = {
-  reported: ["Reported", "yellow"],
+  lost: ["Lost", "yellow"],
   found: ["Found", "green"],
   claimed: ["Claimed", "blue"],
-  closed: ["Closed", "gray"],
 };
 
 export default function LostFound() {
@@ -89,7 +88,7 @@ export default function LostFound() {
               </td>
               <td className="px-4 py-3">
                 <div className="flex gap-1.5">
-                  {(["reported", "found", "claimed", "closed"] as const).filter((s) => s !== item.status).slice(0, 2).map((s) => (
+                  {(["lost", "found", "claimed"] as const).filter((s) => s !== item.status).map((s) => (
                     <button
                       key={s}
                       onClick={() => updateMut.mutate({ id: item.id, status: s })}
