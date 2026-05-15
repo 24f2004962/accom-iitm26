@@ -2,11 +2,13 @@
   "expo": {
     "extra": {
       "eas": {
-        "projectId": "4cecc5ba-b2ef-4b26-b537-7437f0027472"
+        "projectId": "c9906d7d-9b59-4696-b793-54108902a474"
       }
     },
     "android": {
       "package": "com.withnat1234321.workspace"
-    }
+    },
+    "owner": "uuyhb",
+    "slug": "hello-boss-"
   }
 }
