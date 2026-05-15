@@ -4,8 +4,8 @@ import { GraduationCap, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const { login } = useAuth();
-  const [email, setEmail] = useState("superadmin@iitm.ac.in");
-  const [password, setPassword] = useState("qwerty");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -17,7 +17,7 @@ export default function Login() {
     try {
       await login(email, password);
     } catch (err: any) {
-      setError(err.message || "Login failed");
+      setError(err.message || "Invalid email or password");
     } finally {
       setLoading(false);
     }
@@ -49,8 +49,9 @@ export default function Login() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@iitm.ac.in"
+                placeholder="your@iitm.ac.in"
                 required
+                autoComplete="email"
                 className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-slate-100 placeholder-slate-600 outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all"
               />
             </div>
@@ -66,6 +67,7 @@ export default function Login() {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   required
+                  autoComplete="current-password"
                   className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 pr-10 text-sm text-slate-100 placeholder-slate-600 outline-none focus:border-purple-500/60 focus:ring-2 focus:ring-purple-500/20 transition-all"
                 />
                 <button
@@ -93,31 +95,10 @@ export default function Login() {
               {loading ? "Signing in…" : "Sign In"}
             </button>
           </form>
-
-          <div className="mt-5 pt-4 border-t border-white/6">
-            <p className="text-xs text-slate-600 text-center mb-2">Quick fill · Superadmin: <span className="text-slate-500 font-mono">qwerty</span> · Others: <span className="text-slate-500 font-mono">123456</span></p>
-            <div className="grid grid-cols-2 gap-1.5">
-              {[
-                { role: "superadmin", pw: "qwerty" },
-                { role: "admin", pw: "123456" },
-                { role: "coordinator", pw: "123456" },
-                { role: "volunteer", pw: "123456" },
-              ].map(({ role: r, pw }) => (
-                <button
-                  key={r}
-                  onClick={() => { setEmail(`${r}@iitm.ac.in`); setPassword(pw); }}
-                  className="text-[10px] text-slate-500 hover:text-purple-400 hover:bg-purple-500/8 border border-white/6 rounded-lg py-1.5 px-2 transition-all capitalize"
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <p className="text-center text-[10px] text-slate-700 mt-5">
-          Made with ♥ by{" "}
-          <span className="text-slate-500 font-medium">Kartik Chilkoti</span>
+          IIT Madras BS · Hostel Management System
         </p>
       </div>
     </div>

@@ -327,7 +327,6 @@ async function processStaffImport(
     );
     const gender = String(row.Gender ?? row.gender ?? "").trim() || null;
     const emailPrefix = email.split("@")[0]?.trim() || "";
-    const password = String(row.Password ?? row.password ?? "").trim() || emailPrefix || "123456";
 
     if (!email || !name) {
       skipped++;
@@ -343,6 +342,8 @@ async function processStaffImport(
     }
 
     const phone = cleanPhone(phoneRaw);
+    // Default password priority: explicit Password column → contact number → email prefix → fallback
+    const finalPassword = String(row.Password ?? row.password ?? "").trim() || phone || emailPrefix || "123456";
     void gender; // captured for future use; not currently persisted
 
     const [existing] = await db.select({ id: usersTable.id })
@@ -362,7 +363,7 @@ async function processStaffImport(
         id: generateId(),
         name,
         email,
-        passwordHash: hashPassword(password),
+        passwordHash: hashPassword(finalPassword),
         role,
         phone,
         contactNumber: phone,

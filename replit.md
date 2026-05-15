@@ -160,8 +160,9 @@ workspace/
 
 ## Deployed URLs
 
-- **API Server (Railway):** `https://accom-iitm-production.up.railway.app/api`
-- **Health Check:** `https://accom-iitm-production.up.railway.app/health`
+- **Web + API (Railway):** `https://campusops-api-production.up.railway.app/`
+- **API Base:** `https://campusops-api-production.up.railway.app/api`
+- **Health Check:** `https://campusops-api-production.up.railway.app/health`
 - **Web Admin Portal (dev):** Port 5000 via "Start Web Admin" workflow
 
 ## Web Admin Portal

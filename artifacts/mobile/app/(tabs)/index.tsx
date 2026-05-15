@@ -415,52 +415,62 @@ export default function HomeScreen() {
           <Badge label={roleLabel} variant={roleBadge as any} />
         </View>
 
-        {/* ── Staff Status Banner ───────────────────────────────────── */}
-        {requiresShift && (
-          <View style={[styles.statusBanner, {
-            backgroundColor: isActive ? "#22c55e10" : "#f59e0b10",
-            borderColor: isActive ? "#22c55e40" : "#f59e0b40",
-          }]}>
-            <View style={[styles.statusDot, { backgroundColor: isActive ? "#22c55e" : "#f59e0b" }]} />
+        {/* ── Shift Active banner (only when active) ───────────────── */}
+        {requiresShift && isActive && (
+          <View style={[styles.statusBanner, { backgroundColor: "#22c55e10", borderColor: "#22c55e40" }]}>
+            <View style={[styles.statusDot, { backgroundColor: "#22c55e" }]} />
             <View style={{ flex: 1 }}>
-              <Text style={[styles.statusText, { color: isActive ? "#22c55e" : "#f59e0b" }]}>
-                {isActive ? "Shift Active" : "Shift Inactive"}
-              </Text>
+              <Text style={[styles.statusText, { color: "#22c55e" }]}>Shift Active</Text>
               <Text style={[styles.statusSub, { color: theme.textSecondary }]}>
-                {isActive ? "Auto-inactive after 10 min of no activity" : "Tap Go Active to start your shift"}
+                Auto-deactivates after 10 min without activity
               </Text>
             </View>
             <Pressable
               onPress={() => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-                activeStatusMutation.mutate({ goActive: !isActive });
+                activeStatusMutation.mutate({ goActive: false });
               }}
               disabled={activeStatusMutation.isPending}
-              style={[styles.shiftBtn, {
-                backgroundColor: isActive ? "#ef444415" : "#22c55e15",
-                borderColor: isActive ? "#ef444440" : "#22c55e40",
-              }]}
+              style={[styles.shiftBtn, { backgroundColor: "#ef444415", borderColor: "#ef444440" }]}
             >
               {activeStatusMutation.isPending
-                ? <ActivityIndicator size="small" color={isActive ? "#ef4444" : "#22c55e"} />
-                : <Text style={[styles.shiftBtnText, { color: isActive ? "#ef4444" : "#22c55e" }]}>
-                    {isActive ? "Deactivate" : "Go Active"}
-                  </Text>
+                ? <ActivityIndicator size="small" color="#ef4444" />
+                : <Text style={[styles.shiftBtnText, { color: "#ef4444" }]}>End Shift</Text>
               }
             </Pressable>
           </View>
         )}
 
-        {!canWork && (
-          <AnimatedCard style={styles.card}>
-            <View style={styles.emptyState}>
-              <Feather name="lock" size={28} color={theme.textTertiary} />
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>Shift inactive</Text>
-              <Text style={[styles.statusSub, { color: theme.textTertiary, textAlign: "center" }]}>
-                Activate shift to view hostel data and start operations.
-              </Text>
+        {/* ── Must Go Active — full-screen blocker ──────────────────── */}
+        {requiresShift && !isActive && (
+          <View style={[styles.activeBlocker, { backgroundColor: theme.surface, borderColor: theme.border }]}>
+            <View style={[styles.activeBlockerIconWrap, { backgroundColor: "#f59e0b12" }]}>
+              <Feather name="shield-off" size={44} color="#f59e0b" />
             </View>
-          </AnimatedCard>
+            <Text style={[styles.activeBlockerTitle, { color: theme.text }]}>Shift Not Active</Text>
+            <Text style={[styles.activeBlockerSub, { color: theme.textSecondary }]}>
+              You must go active before you can view attendance, inventory, or hostel operations.
+            </Text>
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                activeStatusMutation.mutate({ goActive: true, remark: "Started shift" });
+              }}
+              disabled={activeStatusMutation.isPending}
+              style={styles.activeBlockerBtn}
+            >
+              {activeStatusMutation.isPending
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <>
+                    <Feather name="zap" size={18} color="#fff" />
+                    <Text style={styles.activeBlockerBtnText}>Go Active</Text>
+                  </>
+              }
+            </Pressable>
+            <Text style={[styles.activeBlockerHint, { color: theme.textTertiary }]}>
+              Auto-deactivates after 10 min without activity
+            </Text>
+          </View>
         )}
 
         {/* ══════════════════════════════════════════════════════════════
@@ -866,4 +876,11 @@ const styles = StyleSheet.create({
   fellowBtn: { width: 30, height: 30, borderRadius: 8, alignItems: "center", justifyContent: "center" },
   emptyState: { alignItems: "center", gap: 8, paddingVertical: 20 },
   emptyText: { fontSize: 14, fontFamily: "Inter_400Regular" },
+  activeBlocker: { marginHorizontal: 20, marginTop: 8, marginBottom: 16, borderRadius: 20, borderWidth: 1, padding: 28, alignItems: "center", gap: 14 },
+  activeBlockerIconWrap: { width: 88, height: 88, borderRadius: 44, alignItems: "center", justifyContent: "center", marginBottom: 4 },
+  activeBlockerTitle: { fontSize: 22, fontFamily: "Inter_700Bold", textAlign: "center" },
+  activeBlockerSub: { fontSize: 14, fontFamily: "Inter_400Regular", textAlign: "center", lineHeight: 20, paddingHorizontal: 8 },
+  activeBlockerBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#22c55e", paddingHorizontal: 32, paddingVertical: 14, borderRadius: 14, marginTop: 4, minWidth: 160, justifyContent: "center" },
+  activeBlockerBtnText: { color: "#fff", fontSize: 16, fontFamily: "Inter_700Bold" },
+  activeBlockerHint: { fontSize: 11, fontFamily: "Inter_400Regular", textAlign: "center" },
 });
