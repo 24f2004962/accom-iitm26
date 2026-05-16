@@ -31,6 +31,7 @@ interface Student {
   attendanceStatus?: string;
   checkInTime?: string | null;
   checkOutTime?: string | null;
+  checkedInByName?: string | null;
   inventory?: {
     mattress: boolean;
     bedsheet: boolean;
@@ -525,6 +526,7 @@ const StudentRow = React.memo(function StudentRow({ item, theme, onPress }: { it
   const timeMeta = hasCheckedIn
     ? (checkOutLabel ? `${checkInLabel} · ${checkOutLabel}` : checkInLabel)
     : "Waiting to arrive";
+  const byLabel = hasCheckedIn && item.checkedInByName ? `by ${item.checkedInByName}` : null;
 
   return (
     <Pressable
@@ -544,6 +546,9 @@ const StudentRow = React.memo(function StudentRow({ item, theme, onPress }: { it
           Mess: {item.assignedMess || item.allottedMess || "—"}
         </Text>
         <Text style={[styles.timeMeta, { color: theme.textTertiary }]} numberOfLines={1}>{timeMeta}</Text>
+        {!!byLabel && (
+          <Text style={[styles.timeMeta, { color: theme.textTertiary }]} numberOfLines={1}>{byLabel}</Text>
+        )}
       </View>
       <View style={{ alignItems: "flex-end", gap: 4 }}>
         <View style={[styles.attBadge, { backgroundColor: attColor + "18" }]}>

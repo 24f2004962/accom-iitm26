@@ -253,6 +253,7 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
   const checkinRows = studentIds.length
     ? await db.select({
         studentId: checkinsTable.studentId,
+        volunteerId: checkinsTable.volunteerId,
         checkInTime: checkinsTable.checkInTime,
         checkOutTime: checkinsTable.checkOutTime,
       }).from(checkinsTable).where(and(
@@ -263,18 +264,22 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
 
   const inventoryMap = new Map(inventoryRows.map(r => [r.studentId, r]));
 
+  // Resolve staff names for mess card "given by" (inventory.updatedBy)
   const updatedByIds = [...new Set(inventoryRows.filter(r => r.updatedBy).map(r => r.updatedBy!))];
-  const staffNameRows = updatedByIds.length
+  // Resolve staff names for check-in "checked in by" (checkin.volunteerId)
+  const checkinVolunteerIds = [...new Set(checkinRows.filter(r => r.volunteerId).map(r => r.volunteerId!))];
+  const allStaffIds = [...new Set([...updatedByIds, ...checkinVolunteerIds])];
+  const staffNameRows = allStaffIds.length
     ? await db.select({ id: usersTable.id, name: usersTable.name })
-        .from(usersTable).where(inArray(usersTable.id, updatedByIds))
+        .from(usersTable).where(inArray(usersTable.id, allStaffIds))
     : [];
   const staffNameById = new Map(staffNameRows.map(s => [s.id, s.name]));
 
-  const checkinMap = new Map<string, { checkInTime: Date | null; checkOutTime: Date | null }>();
+  const checkinMap = new Map<string, { checkInTime: Date | null; checkOutTime: Date | null; volunteerId: string | null }>();
   for (const row of checkinRows) {
     const prev = checkinMap.get(row.studentId);
     if (!prev || (row.checkInTime?.getTime() || 0) >= (prev.checkInTime?.getTime() || 0)) {
-      checkinMap.set(row.studentId, { checkInTime: row.checkInTime, checkOutTime: row.checkOutTime });
+      checkinMap.set(row.studentId, { checkInTime: row.checkInTime, checkOutTime: row.checkOutTime, volunteerId: row.volunteerId || null });
     }
   }
 
@@ -290,6 +295,7 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
       messCardGivenByName: inv?.updatedBy ? (staffNameById.get(inv.updatedBy) || null) : null,
       checkInTime: checkin?.checkInTime?.toISOString() || null,
       checkOutTime: checkin?.checkOutTime?.toISOString() || null,
+      checkedInByName: checkin?.volunteerId ? (staffNameById.get(checkin.volunteerId) || null) : null,
       gender: csv?.gender || null,
       allottedHostel: csv?.allottedHostel || s.hostelName || null,
       allottedMess: csv?.allottedMess || s.assignedMess || null,

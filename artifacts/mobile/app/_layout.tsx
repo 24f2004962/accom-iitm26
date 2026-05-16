@@ -8,7 +8,7 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
@@ -61,6 +61,11 @@ export default function RootLayout() {
     Inter_700Bold,
   });
 
+  // Guard: show the app after fonts load OR after a 3s timeout —
+  // whichever comes first. Prevents an infinite white screen when
+  // the font CDN is slow or unavailable (e.g. in Expo Go on mobile).
+  const [appReady, setAppReady] = useState(false);
+
   const appState = useRef(AppState.currentState);
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
@@ -74,11 +79,19 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
-      SplashScreen.hideAsync();
+      setAppReady(true);
+      SplashScreen.hideAsync().catch(() => {});
+      return;
     }
+    // Fallback: render app after 3 s even if fonts haven't resolved
+    const timer = setTimeout(() => {
+      setAppReady(true);
+      SplashScreen.hideAsync().catch(() => {});
+    }, 3000);
+    return () => clearTimeout(timer);
   }, [fontsLoaded, fontError]);
 
-  if (!fontsLoaded && !fontError) return null;
+  if (!appReady) return null;
 
   return (
     <SafeAreaProvider>
