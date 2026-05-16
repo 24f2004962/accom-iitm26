@@ -201,6 +201,7 @@ router.get("/all", requireVolunteer, async (req: AuthRequest, res) => {
   const filtered = staff.filter((s) => staffOverlapsScope(s, scopedIds));
   res.json(filtered.map(s => ({
     ...s,
+    assignedHostelIds: (() => { try { return JSON.parse(s.assignedHostelIds || "[]"); } catch { return []; } })(),
     isOnline: isOnline(s.lastActiveAt),
     lastActiveAt: s.lastActiveAt?.toISOString() || null,
   })));

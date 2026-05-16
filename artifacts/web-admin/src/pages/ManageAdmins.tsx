@@ -6,8 +6,8 @@ import { FileText, Plus, Trash2, Check, X, RefreshCw, AlertCircle, Key, Building
 
 const ROLE_MAX_HOSTELS: Record<string, number> = {
   volunteer: 1,
-  coordinator: 2,
-  admin: 3,
+  coordinator: 10,
+  admin: 20,
   superadmin: 999,
 };
 

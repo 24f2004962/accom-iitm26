@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, notificationsTable } from "@workspace/db";
+import { db, notificationsTable, usersTable } from "@workspace/db";
 import { eq, desc, and } from "drizzle-orm";
 import { requireAuth, AuthRequest } from "../lib/auth.js";
 
@@ -25,6 +25,22 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
       createdAt: n.createdAt.toISOString(),
     }))
   );
+});
+
+// POST /api/notifications/register-token — store Expo push token for the user
+router.post("/register-token", requireAuth, async (req: AuthRequest, res) => {
+  const { pushToken } = req.body;
+  if (!pushToken || typeof pushToken !== "string") {
+    res.status(400).json({ message: "pushToken is required" });
+    return;
+  }
+
+  await db
+    .update(usersTable)
+    .set({ pushToken })
+    .where(eq(usersTable.id, req.userId!));
+
+  res.json({ success: true });
 });
 
 // PATCH /api/notifications/read-all — mark all as read for the user

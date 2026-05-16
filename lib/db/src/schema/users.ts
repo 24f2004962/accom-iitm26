@@ -19,6 +19,7 @@ export const usersTable = pgTable("users", {
   isActive: boolean("is_active").default(true),
   lastActiveAt: timestamp("last_active_at"),
   assignedHostelIds: text("assigned_hostel_ids").default("[]"),
+  pushToken: text("push_token"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

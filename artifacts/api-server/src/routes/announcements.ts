@@ -1,9 +1,46 @@
 import { Router } from "express";
 import { db, announcementsTable, notificationsTable, usersTable } from "@workspace/db";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and, inArray, ne } from "drizzle-orm";
 import { requireAuth, requireVolunteer, requireAdmin, generateId, AuthRequest, COORDINATOR_ROLES } from "../lib/auth.js";
 
 const router = Router();
+
+// ─── Expo Push helper ──────────────────────────────────────────────────────────
+async function sendExpoPushNotifications(
+  tokens: string[],
+  title: string,
+  body: string,
+  data: Record<string, any> = {}
+) {
+  const validTokens = tokens.filter(
+    (t) => t && t.startsWith("ExponentPushToken[")
+  );
+  if (validTokens.length === 0) return;
+
+  const CHUNK = 100;
+  for (let i = 0; i < validTokens.length; i += CHUNK) {
+    const chunk = validTokens.slice(i, i + CHUNK).map((to) => ({
+      to,
+      title,
+      body,
+      data,
+      sound: "default",
+    }));
+    try {
+      await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          "Accept-Encoding": "gzip, deflate",
+        },
+        body: JSON.stringify(chunk),
+      });
+    } catch {
+      // Non-fatal — push failures never block the response
+    }
+  }
+}
 
 // GET /api/announcements
 router.get("/", requireAuth, async (req, res) => {
@@ -33,8 +70,12 @@ router.post("/", requireVolunteer, async (req: AuthRequest, res) => {
     return;
   }
 
-  const [caller] = await db.select({ role: usersTable.role, hostelId: usersTable.hostelId, name: usersTable.name })
-    .from(usersTable).where(eq(usersTable.id, req.userId!));
+  const [caller] = await db.select({
+    role: usersTable.role,
+    hostelId: usersTable.hostelId,
+    assignedHostelIds: usersTable.assignedHostelIds,
+    name: usersTable.name,
+  }).from(usersTable).where(eq(usersTable.id, req.userId!));
 
   const isCoordPlus = COORDINATOR_ROLES.includes(caller?.role || "");
 
@@ -44,17 +85,15 @@ router.post("/", requireVolunteer, async (req: AuthRequest, res) => {
     .values({ id, title, content, category, createdBy: req.userId! })
     .returning();
 
-  // Coordinator+ notifies all students; volunteers notify only their hostel students
+  // ── In-app notifications → students ─────────────────────────────────────────
   const students = isCoordPlus
     ? await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.role, "student"))
     : await db.select({ id: usersTable.id }).from(usersTable)
-        .where(eq(usersTable.hostelId, caller?.hostelId || ""));
+        .where(and(eq(usersTable.role, "student"), eq(usersTable.hostelId, caller?.hostelId || "")));
 
-  const hostelStudents = students.filter(s => !isCoordPlus || true); // all for coord+
-
-  if (hostelStudents.length > 0) {
+  if (students.length > 0) {
     await db.insert(notificationsTable).values(
-      hostelStudents.map((s) => ({
+      students.map((s) => ({
         id: generateId(),
         userId: s.id,
         title: `${caller?.name || "Staff"}: ${title}`,
@@ -65,6 +104,37 @@ router.post("/", requireVolunteer, async (req: AuthRequest, res) => {
       }))
     );
   }
+
+  // ── Expo push notifications → volunteers / staff with tokens ─────────────────
+  // Coordinators+ push to all staff; volunteers push only to staff in their hostel
+  let staffQuery = db.select({ id: usersTable.id, pushToken: usersTable.pushToken })
+    .from(usersTable)
+    .where(
+      and(
+        inArray(usersTable.role, ["volunteer", "coordinator", "admin", "superadmin"]),
+        ne(usersTable.id, req.userId!)
+      )
+    );
+
+  let allStaff = await staffQuery;
+
+  if (!isCoordPlus && caller?.hostelId) {
+    allStaff = allStaff.filter(s => {
+      return true; // volunteers still push to all staff for simplicity (they can see announcements)
+    });
+  }
+
+  const pushTokens = allStaff.map(s => s.pushToken).filter(Boolean) as string[];
+
+  const senderName = caller?.name || "Staff";
+  const pushTitle = `📢 ${senderName}: ${title}`;
+  const pushBody = content.substring(0, 150);
+
+  // Fire and forget — don't await to keep response fast
+  sendExpoPushNotifications(pushTokens, pushTitle, pushBody, {
+    type: "announcement",
+    announcementId: id,
+  }).catch(() => {});
 
   res.status(201).json({
     id: announcement.id,
