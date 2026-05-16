@@ -193,6 +193,7 @@ router.get("/all", requireVolunteer, async (req: AuthRequest, res) => {
     area: usersTable.area,
     assignedHostelIds: usersTable.assignedHostelIds,
     hostelName: hostelsTable.name,
+    createdAt: usersTable.createdAt,
   }).from(usersTable)
     .leftJoin(hostelsTable, eq(usersTable.hostelId, hostelsTable.id))
     .where(roleWhere)

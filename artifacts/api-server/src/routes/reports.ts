@@ -223,8 +223,8 @@ router.patch("/assign-hostel/:id", requireSuperAdmin, async (req: AuthRequest, r
 
   const effectiveRole = role || before.role;
 
-  // Role-based hostel limits: volunteer=1, coordinator=2, admin=3
-  const maxHostels = effectiveRole === "volunteer" ? 1 : effectiveRole === "coordinator" ? 10 : effectiveRole === "admin" ? 20 : 999;
+  // Role-based hostel limits: volunteer=1, admin/superadmin=unlimited
+  const maxHostels = effectiveRole === "volunteer" ? 1 : 999;
 
   const updates: Record<string, any> = {};
   if (role !== undefined) updates.role = role;

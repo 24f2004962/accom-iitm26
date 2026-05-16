@@ -6,8 +6,7 @@ import { UserCog, Plus, Search, Trash2, CheckCircle, XCircle, RefreshCw, Buildin
 
 const ROLE_MAX_HOSTELS: Record<string, number> = {
   volunteer: 1,
-  coordinator: 10,
-  admin: 20,
+  admin: 999,
   superadmin: 999,
 };
 
@@ -112,7 +111,7 @@ export default function Staff() {
   function openAssign(s: any) {
     setAssignTarget(s);
     setAssignRole(s.role);
-    const ids: string[] = Array.isArray(s.assignedHostelIds)
+    const ids: string[] = Array.isArray(s.assignedHostelIds) && s.assignedHostelIds.length > 0
       ? s.assignedHostelIds
       : s.hostelId ? [s.hostelId] : [];
     setAssignHostelIds(ids);
@@ -121,7 +120,7 @@ export default function Staff() {
   }
 
   function toggleHostel(hid: string) {
-    const max = ROLE_MAX_HOSTELS[assignRole] ?? 1;
+    const max = ROLE_MAX_HOSTELS[assignRole] ?? 999;
     setAssignHostelIds((prev) => {
       if (prev.includes(hid)) return prev.filter((x) => x !== hid);
       if (prev.length >= max) {
@@ -132,7 +131,7 @@ export default function Staff() {
     });
   }
 
-  const maxForRole = ROLE_MAX_HOSTELS[assignRole] ?? 1;
+  const maxForRole = ROLE_MAX_HOSTELS[assignRole] ?? 999;
 
   return (
     <div className="fade-in">
@@ -156,7 +155,6 @@ export default function Staff() {
             <option value="">All Roles</option>
             <option value="superadmin">Super Admin</option>
             <option value="admin">Admin</option>
-            <option value="coordinator">Coordinator</option>
             <option value="volunteer">Volunteer</option>
           </Select>
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
@@ -171,7 +169,7 @@ export default function Staff() {
         >
           {filtered.map((s: any) => {
             const isOnline = activeIds.has(s.id);
-            const assignedIds: string[] = Array.isArray(s.assignedHostelIds)
+            const assignedIds: string[] = Array.isArray(s.assignedHostelIds) && s.assignedHostelIds.length > 0
               ? s.assignedHostelIds
               : s.hostelId ? [s.hostelId] : [];
             return (
@@ -198,7 +196,7 @@ export default function Staff() {
                       : <><XCircle size={13} className="text-slate-600" /><span className="text-xs text-slate-600">Offline</span></>}
                   </div>
                 </td>
-                <td className="px-4 py-3 max-w-[200px]">
+                <td className="px-4 py-3 max-w-[220px]">
                   <HostelBadges ids={assignedIds} hostels={hostels as any[]} />
                   {s.area && <p className="text-[10px] text-slate-500 mt-0.5">{s.area}</p>}
                 </td>
@@ -256,10 +254,9 @@ export default function Staff() {
           <div>
             <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Role</label>
             <Select value={createForm.role} onChange={(v) => setCreateForm((f) => ({ ...f, role: v }))}>
-              <option value="volunteer">Volunteer (1 hostel)</option>
-              <option value="coordinator">Coordinator (up to 10 hostels)</option>
-              <option value="admin">Admin (up to 20 hostels)</option>
-              <option value="superadmin">Super Admin (all hostels)</option>
+              <option value="volunteer">Volunteer — 1 hostel</option>
+              <option value="admin">Admin — all hostels</option>
+              <option value="superadmin">Super Admin — full access</option>
             </Select>
           </div>
           {createError && <p className="text-red-400 text-xs">{createError}</p>}
@@ -290,13 +287,12 @@ export default function Staff() {
               <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Role</label>
               <Select value={assignRole} onChange={(v) => {
                 setAssignRole(v);
-                const max = ROLE_MAX_HOSTELS[v] ?? 1;
-                if (assignHostelIds.length > max) setAssignHostelIds(assignHostelIds.slice(0, max));
+                const max = ROLE_MAX_HOSTELS[v] ?? 999;
+                if (max === 1 && assignHostelIds.length > 1) setAssignHostelIds(assignHostelIds.slice(0, 1));
               }}>
-                <option value="volunteer">Volunteer — 1 hostel max</option>
-                <option value="coordinator">Coordinator — up to 10 hostels</option>
-                <option value="admin">Admin — up to 20 hostels</option>
-                <option value="superadmin">Super Admin — all hostels</option>
+                <option value="volunteer">Volunteer — 1 hostel only</option>
+                <option value="admin">Admin — all hostels</option>
+                <option value="superadmin">Super Admin — full access</option>
               </Select>
             </div>
 
@@ -305,7 +301,7 @@ export default function Staff() {
                 <label className="text-xs font-semibold text-slate-400">
                   Assigned Hostels
                   <span className="ml-2 text-slate-600 font-normal">
-                    ({assignHostelIds.length}/{maxForRole === 999 ? "∞" : maxForRole} selected)
+                    ({assignHostelIds.length} selected{maxForRole === 1 ? " — max 1" : ""})
                   </span>
                 </label>
                 {assignHostelIds.length > 0 && (
@@ -317,7 +313,7 @@ export default function Staff() {
               <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
                 {(hostels as any[]).map((h: any) => {
                   const selected = assignHostelIds.includes(h.id);
-                  const atMax = !selected && assignHostelIds.length >= maxForRole;
+                  const atMax = !selected && maxForRole === 1 && assignHostelIds.length >= 1;
                   return (
                     <button
                       key={h.id}

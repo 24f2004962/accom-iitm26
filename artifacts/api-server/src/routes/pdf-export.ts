@@ -67,21 +67,25 @@ function formatNoteForPdf(note: string | null | undefined, type: string): string
     const obj = JSON.parse(note);
     if (typeof obj !== "object" || obj === null) return note;
     if (type === "assignment") {
-      const parts: string[] = [];
+      const sentences: string[] = [];
       const fromRole = obj.from?.role;
       const toRole = obj.to?.role;
-      if (fromRole && toRole && fromRole !== toRole) parts.push(`Role: ${fromRole} → ${toRole}`);
-      const fromHostel = obj.from?.hostelId;
-      const toHostel = obj.to?.hostelId;
-      if (fromHostel !== toHostel) parts.push(`Hostel: ${fromHostel || "none"} → ${toHostel || "none"}`);
+      if (fromRole && toRole && fromRole !== toRole) {
+        sentences.push(`Role was changed from ${fromRole} to ${toRole}.`);
+      } else if (fromRole) {
+        sentences.push(`Role remains ${fromRole}.`);
+      }
       const fh: string[] = obj.from?.assignedHostelIds || [];
       const th: string[] = obj.to?.assignedHostelIds || [];
       if (JSON.stringify(fh) !== JSON.stringify(th)) {
-        parts.push(`Assigned: [${fh.join(", ") || "none"}] → [${th.join(", ") || "none"}]`);
+        const from = fh.length ? fh.join(", ") : "none";
+        const to = th.length ? th.join(", ") : "none";
+        sentences.push(`Hostel assignment changed from ${from} to ${to}.`);
       }
-      return parts.length > 0 ? parts.join(" · ") : "Staff assignment updated";
+      if (obj.to?.area) sentences.push(`Area set to ${obj.to.area}.`);
+      return sentences.length > 0 ? sentences.join(" ") : "Staff assignment was updated.";
     }
-    return JSON.stringify(obj);
+    return note;
   } catch {
     return note;
   }

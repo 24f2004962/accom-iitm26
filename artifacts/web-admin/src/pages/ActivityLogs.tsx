@@ -27,28 +27,25 @@ function formatNote(note: string | null | undefined, type: string): string {
     const obj = JSON.parse(note);
     if (typeof obj !== "object" || obj === null) return note;
     if (type === "assignment") {
-      const parts: string[] = [];
+      const sentences: string[] = [];
       const fromRole = obj.from?.role;
       const toRole = obj.to?.role;
       if (fromRole && toRole && fromRole !== toRole) {
-        parts.push(`Role: ${fromRole} → ${toRole}`);
-      }
-      const fromHostel = obj.from?.hostelId;
-      const toHostel = obj.to?.hostelId;
-      if (fromHostel !== toHostel) {
-        parts.push(`Hostel: ${fromHostel || "none"} → ${toHostel || "none"}`);
+        sentences.push(`Role was changed from ${fromRole} to ${toRole}.`);
+      } else if (fromRole) {
+        sentences.push(`Role remains ${fromRole}.`);
       }
       const fromHostels: string[] = obj.from?.assignedHostelIds || [];
       const toHostels: string[] = obj.to?.assignedHostelIds || [];
       if (JSON.stringify(fromHostels) !== JSON.stringify(toHostels)) {
-        const fStr = fromHostels.length ? fromHostels.join(", ") : "none";
-        const tStr = toHostels.length ? toHostels.join(", ") : "none";
-        parts.push(`Hostels: ${fStr} → ${tStr}`);
+        const from = fromHostels.length ? fromHostels.join(", ") : "none";
+        const to = toHostels.length ? toHostels.join(", ") : "none";
+        sentences.push(`Hostel assignment changed from ${from} to ${to}.`);
       }
-      if (obj.to?.area) parts.push(`Area: ${obj.to.area}`);
-      return parts.length > 0 ? parts.join("  ·  ") : "Staff assignment updated";
+      if (obj.to?.area) sentences.push(`Area set to ${obj.to.area}.`);
+      return sentences.length > 0 ? sentences.join(" ") : "Staff assignment was updated.";
     }
-    return JSON.stringify(obj);
+    return note;
   } catch {
     return note;
   }

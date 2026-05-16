@@ -6,8 +6,7 @@ import { FileText, Plus, Trash2, Check, X, RefreshCw, AlertCircle, Key, Building
 
 const ROLE_MAX_HOSTELS: Record<string, number> = {
   volunteer: 1,
-  coordinator: 10,
-  admin: 20,
+  admin: 999,
   superadmin: 999,
 };
 
@@ -138,14 +137,16 @@ export default function ManageAdmins() {
   function openEdit(s: any) {
     setEditTarget(s);
     setEditRole(s.role);
-    const ids: string[] = Array.isArray(s.assignedHostelIds) ? s.assignedHostelIds : s.hostelId ? [s.hostelId] : [];
+    const ids: string[] = Array.isArray(s.assignedHostelIds) && s.assignedHostelIds.length > 0
+      ? s.assignedHostelIds
+      : s.hostelId ? [s.hostelId] : [];
     setEditHostelIds(ids);
     setEditArea(s.area || "");
     setEditError("");
   }
 
   function toggleHostel(hid: string) {
-    const max = ROLE_MAX_HOSTELS[editRole] ?? 1;
+    const max = ROLE_MAX_HOSTELS[editRole] ?? 999;
     setEditHostelIds((prev) => {
       if (prev.includes(hid)) return prev.filter((x) => x !== hid);
       if (prev.length >= max) {
@@ -156,7 +157,7 @@ export default function ManageAdmins() {
     });
   }
 
-  const maxForRole = ROLE_MAX_HOSTELS[editRole] ?? 1;
+  const maxForRole = ROLE_MAX_HOSTELS[editRole] ?? 999;
 
   return (
     <div className="fade-in space-y-6">
@@ -195,7 +196,9 @@ export default function ManageAdmins() {
           empty={(staff as any[]).length === 0 ? "No staff members found" : undefined}
         >
           {(staff as any[]).map((s: any) => {
-            const assignedIds: string[] = Array.isArray(s.assignedHostelIds) ? s.assignedHostelIds : s.hostelId ? [s.hostelId] : [];
+            const assignedIds: string[] = Array.isArray(s.assignedHostelIds) && s.assignedHostelIds.length > 0
+              ? s.assignedHostelIds
+              : s.hostelId ? [s.hostelId] : [];
             return (
               <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
                 <td className="px-4 py-3">
@@ -210,7 +213,7 @@ export default function ManageAdmins() {
                   </div>
                 </td>
                 <td className="px-4 py-3"><RoleBadge role={s.role} /></td>
-                <td className="px-4 py-3 max-w-[200px]">
+                <td className="px-4 py-3 max-w-[220px]">
                   <HostelBadges ids={assignedIds} hostels={hostels as any[]} />
                 </td>
                 <td className="px-4 py-3 text-xs text-slate-500">
@@ -275,9 +278,8 @@ export default function ManageAdmins() {
             <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Role</label>
             <Select value={form.role} onChange={(v) => setForm((f) => ({ ...f, role: v }))}>
               <option value="volunteer">Volunteer — 1 hostel</option>
-              <option value="coordinator">Coordinator — up to 10 hostels</option>
-              <option value="admin">Admin — up to 20 hostels</option>
-              <option value="superadmin">Super Admin — all access</option>
+              <option value="admin">Admin — all hostels</option>
+              <option value="superadmin">Super Admin — full access</option>
             </Select>
           </div>
           {formError && (
@@ -311,13 +313,12 @@ export default function ManageAdmins() {
               <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Role</label>
               <Select value={editRole} onChange={(v) => {
                 setEditRole(v);
-                const max = ROLE_MAX_HOSTELS[v] ?? 1;
-                if (editHostelIds.length > max) setEditHostelIds(editHostelIds.slice(0, max));
+                const max = ROLE_MAX_HOSTELS[v] ?? 999;
+                if (max === 1 && editHostelIds.length > 1) setEditHostelIds(editHostelIds.slice(0, 1));
               }}>
-                <option value="volunteer">Volunteer — 1 hostel max</option>
-                <option value="coordinator">Coordinator — up to 10 hostels</option>
-                <option value="admin">Admin — up to 20 hostels</option>
-                <option value="superadmin">Super Admin — all hostels</option>
+                <option value="volunteer">Volunteer — 1 hostel only</option>
+                <option value="admin">Admin — all hostels</option>
+                <option value="superadmin">Super Admin — full access</option>
               </Select>
             </div>
 
@@ -326,17 +327,17 @@ export default function ManageAdmins() {
                 <label className="text-xs font-semibold text-slate-400">
                   Assigned Hostels
                   <span className="ml-2 text-slate-600 font-normal">
-                    ({editHostelIds.length}/{maxForRole === 999 ? "∞" : maxForRole})
+                    ({editHostelIds.length} selected{maxForRole === 1 ? " — max 1" : ""})
                   </span>
                 </label>
                 {editHostelIds.length > 0 && (
                   <button onClick={() => setEditHostelIds([])} className="text-[10px] text-red-400 hover:text-red-300">Clear all</button>
                 )}
               </div>
-              <div className="max-h-44 overflow-y-auto space-y-1.5 pr-1">
+              <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
                 {(hostels as any[]).map((h: any) => {
                   const selected = editHostelIds.includes(h.id);
-                  const atMax = !selected && editHostelIds.length >= maxForRole;
+                  const atMax = !selected && maxForRole === 1 && editHostelIds.length >= 1;
                   return (
                     <button
                       key={h.id}
@@ -355,6 +356,7 @@ export default function ManageAdmins() {
                         {selected && <CheckCircle size={10} className="text-white" />}
                       </div>
                       <span className="text-sm flex-1">{h.name}</span>
+                      {selected && <span className="text-[10px] text-indigo-400">✓</span>}
                     </button>
                   );
                 })}
@@ -474,9 +476,7 @@ export default function ManageAdmins() {
                   onChange={(v) => setApproveRoles((r) => ({ ...r, [p.id]: v }))}
                   className="min-w-32"
                 >
-                  <option value="student">Student</option>
                   <option value="volunteer">Volunteer</option>
-                  <option value="coordinator">Coordinator</option>
                   <option value="admin">Admin</option>
                 </Select>
                 <div className="flex gap-1.5">
