@@ -17,8 +17,42 @@ const TYPE_MAP: Record<string, [string, "purple" | "green" | "blue" | "yellow" |
   inventory: ["Inventory", "blue"],
   "mess-card": ["Mess Card", "yellow"],
   entry: ["Entry", "yellow"],
+  assignment: ["Assignment", "purple"],
   custom: ["Custom", "gray"],
 };
+
+function formatNote(note: string | null | undefined, type: string): string {
+  if (!note) return "—";
+  try {
+    const obj = JSON.parse(note);
+    if (typeof obj !== "object" || obj === null) return note;
+    if (type === "assignment") {
+      const parts: string[] = [];
+      const fromRole = obj.from?.role;
+      const toRole = obj.to?.role;
+      if (fromRole && toRole && fromRole !== toRole) {
+        parts.push(`Role: ${fromRole} → ${toRole}`);
+      }
+      const fromHostel = obj.from?.hostelId;
+      const toHostel = obj.to?.hostelId;
+      if (fromHostel !== toHostel) {
+        parts.push(`Hostel: ${fromHostel || "none"} → ${toHostel || "none"}`);
+      }
+      const fromHostels: string[] = obj.from?.assignedHostelIds || [];
+      const toHostels: string[] = obj.to?.assignedHostelIds || [];
+      if (JSON.stringify(fromHostels) !== JSON.stringify(toHostels)) {
+        const fStr = fromHostels.length ? fromHostels.join(", ") : "none";
+        const tStr = toHostels.length ? toHostels.join(", ") : "none";
+        parts.push(`Hostels: ${fStr} → ${tStr}`);
+      }
+      if (obj.to?.area) parts.push(`Area: ${obj.to.area}`);
+      return parts.length > 0 ? parts.join("  ·  ") : "Staff assignment updated";
+    }
+    return JSON.stringify(obj);
+  } catch {
+    return note;
+  }
+}
 
 export default function ActivityLogs() {
   const [search, setSearch] = useState("");
@@ -102,7 +136,7 @@ export default function ActivityLogs() {
                     </div>
                   </td>
                   <td className="px-4 py-3"><Badge label={typeLabel} color={typeColor} /></td>
-                  <td className="px-4 py-3 text-sm text-slate-400 max-w-xs truncate">{log.note || "—"}</td>
+                  <td className="px-4 py-3 text-sm text-slate-400 max-w-xs truncate" title={formatNote(log.note, log.type)}>{formatNote(log.note, log.type)}</td>
                   <td className="px-4 py-3 text-xs text-slate-500">{log.hostelName || log.hostelId || "—"}</td>
                   <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
                     {log.createdAt ? new Date(log.createdAt).toLocaleString("en-IN", {

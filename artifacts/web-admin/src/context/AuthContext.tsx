@@ -46,6 +46,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       method: "POST",
       body: JSON.stringify({ email: email.trim().toLowerCase(), password }),
     });
+    if (data.user.role === "student" || data.user.role === "pending") {
+      throw new Error("This portal is for staff only. Students should use the mobile app.");
+    }
     setToken(data.token);
     setTok(data.token);
     setUser(data.user);

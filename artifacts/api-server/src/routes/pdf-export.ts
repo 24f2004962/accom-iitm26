@@ -35,6 +35,58 @@ const C = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
+/**
+ * Buffer the entire PDF document, then send it with Content-Length so the
+ * browser always receives a complete file (avoids truncation with piped streams).
+ */
+function sendPdf(doc: InstanceType<typeof PDFDocument>, res: any, filename: string) {
+  const chunks: Buffer[] = [];
+  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+  doc.on("end", () => {
+    const pdf = Buffer.concat(chunks);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", String(pdf.length));
+    res.end(pdf);
+  });
+  doc.on("error", (err: Error) => {
+    console.error("[PDF] Error generating PDF:", err);
+    if (!res.headersSent) {
+      res.status(500).json({ error: "PDF generation failed", message: err.message });
+    }
+  });
+}
+
+/**
+ * Format a timelog note for human-readable display.
+ * Assignment notes are stored as JSON objects; all others are plain text.
+ */
+function formatNoteForPdf(note: string | null | undefined, type: string): string {
+  if (!note) return "—";
+  try {
+    const obj = JSON.parse(note);
+    if (typeof obj !== "object" || obj === null) return note;
+    if (type === "assignment") {
+      const parts: string[] = [];
+      const fromRole = obj.from?.role;
+      const toRole = obj.to?.role;
+      if (fromRole && toRole && fromRole !== toRole) parts.push(`Role: ${fromRole} → ${toRole}`);
+      const fromHostel = obj.from?.hostelId;
+      const toHostel = obj.to?.hostelId;
+      if (fromHostel !== toHostel) parts.push(`Hostel: ${fromHostel || "none"} → ${toHostel || "none"}`);
+      const fh: string[] = obj.from?.assignedHostelIds || [];
+      const th: string[] = obj.to?.assignedHostelIds || [];
+      if (JSON.stringify(fh) !== JSON.stringify(th)) {
+        parts.push(`Assigned: [${fh.join(", ") || "none"}] → [${th.join(", ") || "none"}]`);
+      }
+      return parts.length > 0 ? parts.join(" · ") : "Staff assignment updated";
+    }
+    return JSON.stringify(obj);
+  } catch {
+    return note;
+  }
+}
+
 function t(s: string | null | undefined, n: number): string {
   if (!s) return "—";
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
@@ -228,9 +280,7 @@ router.get("/students", requireAdmin, async (_req, res) => {
   const out     = students.length - entered;
 
   const doc = new PDFDocument({ margin: 0, size: [841, 595], autoFirstPage: true });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", "attachment; filename=students.pdf");
-  doc.pipe(res);
+  sendPdf(doc, res, "students.pdf");
 
   let pageNum = 1;
   drawPageHeader(doc, "Students Directory", `Total: ${students.length}`);
@@ -295,9 +345,7 @@ router.get("/attendance", requireAdmin, async (_req, res) => {
   const out     = records.length - entered;
 
   const doc = new PDFDocument({ margin: 0, size: [841, 595], autoFirstPage: true });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename=attendance-${date}.pdf`);
-  doc.pipe(res);
+  sendPdf(doc, res, `attendance-${date}.pdf`);
 
   let pageNum = 1;
   drawPageHeader(doc, "Attendance Report", `Date: ${date}  ·  ${records.length} records`);
@@ -336,7 +384,7 @@ router.get("/attendance", requireAdmin, async (_req, res) => {
 
 // ─── GET /api/pdf/activity-logs ───────────────────────────────────────────────
 
-router.get("/activity-logs", requireSuperAdmin, async (_req, res) => {
+router.get("/activity-logs", requireAdmin, async (_req, res) => {
   const logs = await db.select({
     type:      timeLogsTable.type,
     note:      timeLogsTable.note,
@@ -350,9 +398,7 @@ router.get("/activity-logs", requireSuperAdmin, async (_req, res) => {
     .limit(1000);
 
   const doc = new PDFDocument({ margin: 0, size: [841, 595], autoFirstPage: true });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", "attachment; filename=activity-logs.pdf");
-  doc.pipe(res);
+  sendPdf(doc, res, "activity-logs.pdf");
 
   let pageNum = 1;
   drawPageHeader(doc, "Staff Activity Logs", `${logs.length} entries`);
@@ -380,7 +426,7 @@ router.get("/activity-logs", requireSuperAdmin, async (_req, res) => {
     t(l.userName || "Unknown", 24),
     t(l.userRole || "—", 12),
     t(l.type, 12),
-    t(l.note || "—", 48),
+    t(formatNoteForPdf(l.note, l.type), 52),
   ]);
 
   drawTable(doc, headers, rows, colW, tableLeft, startY, maxY, null as any, (d, pn) => {
@@ -422,9 +468,7 @@ router.get("/full-report", requireSuperAdmin, async (_req, res) => {
     .sort((a, b) => b[1].total - a[1].total);
 
   const doc = new PDFDocument({ margin: 0, size: [841, 595], autoFirstPage: true });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", "attachment; filename=full-report.pdf");
-  doc.pipe(res);
+  sendPdf(doc, res, "full-report.pdf");
 
   let pageNum = 1;
   const generated = new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata" });
@@ -538,9 +582,7 @@ router.get("/checkins", requireAdmin, async (req, res) => {
   const checkedOut = records.filter(r => r.checkOutTime).length;
 
   const doc = new PDFDocument({ margin: 0, size: [841, 595], autoFirstPage: true });
-  res.setHeader("Content-Type", "application/pdf");
-  res.setHeader("Content-Disposition", `attachment; filename=checkins-${date}.pdf`);
-  doc.pipe(res);
+  sendPdf(doc, res, `checkins-${date}.pdf`);
 
   let pageNum = 1;
   drawPageHeader(doc, "Campus Check-in Report", `Date: ${date}  ·  ${records.length} entries`);
