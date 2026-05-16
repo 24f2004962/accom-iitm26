@@ -11,6 +11,7 @@ import helmet from "helmet";
 import path from "path";
 import { existsSync } from "fs";
 import router from "./routes/index.js";
+import { sseBus, SSEEvent } from "./lib/sse.js";
 
 // import.meta.dirname resolves to the directory of THIS file at runtime.
 // In dev (tsx ESM):  artifacts/api-server/src/
@@ -111,6 +112,36 @@ app.use("/api/auth", authLimiter);
 
 // ✅ Apply general limiter
 app.use("/api", generalLimiter);
+
+// ✅ SSE LIVE-SYNC EMITTER — registered BEFORE the router so res.on("finish")
+// fires after every successful mutation and pushes the event to all SSE clients.
+// IMPORTANT: req.path is mutated by nested routers — capture req.originalUrl NOW
+// (before calling next) so the path is correct when the finish handler fires.
+app.use("/api", (req, _res, next) => {
+  const method = req.method.toUpperCase();
+  if (!["POST", "PATCH", "DELETE", "PUT"].includes(method)) return next();
+
+  const url = req.originalUrl; // frozen at entry — never mutated by child routers
+
+  _res.on("finish", () => {
+    if (_res.statusCode < 200 || _res.statusCode >= 300) return;
+    let event: SSEEvent | null = null;
+
+    if (/\/(inventory|mess-card|mess-attendance)/.test(url)) event = "inventory_update";
+    else if (/\/attendance/.test(url))                        event = "attendance_update";
+    else if (/\/checkins/.test(url))                         event = "checkin_update";
+    else if (/\/students/.test(url))                         event = "student_update";
+    else if (/\/import/.test(url))                           event = "student_update";
+    else if (/\/staff/.test(url))                            event = "staff_update";
+    else if (/\/admin/.test(url))                            event = "staff_update";
+    else if (/\/announcements/.test(url))                    event = "announcement_update";
+    else if (/\/lostitems/.test(url))                        event = "lostitem_update";
+
+    if (event) sseBus.emit(event);
+  });
+
+  next();
+});
 
 // ✅ MAIN ROUTER
 app.use("/api", router);

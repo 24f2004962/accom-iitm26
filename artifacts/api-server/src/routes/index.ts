@@ -19,6 +19,7 @@ import pdfExportRouter from "./pdf-export.js";
 import checkinsRouter from "./checkins.js";
 import messAttendanceRouter from "./mess-attendance.js";
 import approvalsRouter from "./approvals.js";
+import eventsRouter from "./events.js";
 
 const router: IRouter = Router();
 
@@ -43,5 +44,6 @@ router.use("/pdf", pdfExportRouter);
 router.use("/checkins", checkinsRouter);
 router.use("/mess-attendance", messAttendanceRouter);
 router.use("/approvals", approvalsRouter);
+router.use("/events", eventsRouter);
 
 export default router;

@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import Layout, { type Page } from "@/components/Layout";
 import Login from "@/pages/Login";
 import Dashboard from "@/pages/Dashboard";
@@ -53,6 +54,11 @@ function AppInner() {
 
   if (!user) return <Login />;
 
+  return <AuthenticatedApp page={page} setPage={setPage} />;
+}
+
+function AuthenticatedApp({ page, setPage }: { page: Page; setPage: (p: Page) => void }) {
+  useLiveSync();
   const PageComponent = PAGES[page] || Dashboard;
 
   return (
