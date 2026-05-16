@@ -22,15 +22,18 @@ config.resolver.nodeModulesPaths = [
 // relative to that deep real path instead of the project root — causing build
 // failures in EAS / production Android builds.
 //
-// Intercept that specific import and redirect it to expo-router/entry-classic
-// so the correct entry point is always used regardless of node_modules layout.
+// Pre-resolve expo-router/entry-classic at config load time (relative to this
+// file, where node_modules are correctly set up) and return the absolute path
+// directly so Metro never needs to re-resolve from the wrong deep pnpm context.
+const EXPO_ROUTER_ENTRY = require.resolve("expo-router/entry-classic");
+
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
     moduleName === "../../App" &&
     typeof context.originModulePath === "string" &&
     context.originModulePath.includes("/expo/AppEntry")
   ) {
-    return context.resolveRequest(context, "expo-router/entry-classic", platform);
+    return { type: "sourceFile", filePath: EXPO_ROUTER_ENTRY };
   }
   return context.resolveRequest(context, moduleName, platform);
 };
