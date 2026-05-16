@@ -34,31 +34,101 @@ export async function autoSeed() {
       console.log("[seed] Real hostels created");
     }
 
-    const [hostelId1, hostelId2] = [hostelIds[0] ?? "Mandakini", hostelIds[1] ?? "Cauvery"];
+    const [hostelId1, hostelId2] = [hostelIds[0] ?? "Bhadra", hostelIds[1] ?? "Brahmaputra"];
+    const pw = "123456";
 
-    // --- Staff Demo Accounts (upsert — safe under concurrent workers) ---
+    // --- Demo Student Account ---
+    const studentPwHash = await hashPassword(pw);
+    await db.insert(usersTable).values({
+      id: generateId(),
+      name: "Arjun Kumar",
+      email: "student@iitm.ac.in",
+      passwordHash: studentPwHash,
+      role: "student",
+      rollNumber: "21F3001234",
+      hostelId: hostelId1,
+      roomNumber: "A-104",
+      assignedMess: "Neelkesh - North - Veg",
+      area: "N",
+      attendanceStatus: "entered",
+      isActive: true,
+    }).onConflictDoUpdate({
+      target: usersTable.email,
+      set: { passwordHash: studentPwHash, name: "Arjun Kumar", hostelId: hostelId1, roomNumber: "A-104" },
+    });
+
+    // --- Staff Demo Accounts ---
     const staffAccounts = [
-      { email: "volunteer@iitm.ac.in", name: "Priya Volunteer", role: "volunteer", hostelId: hostelId1, area: "Operations", assignedHostelIds: "[]" },
-      { email: "coordinator@iitm.ac.in", name: "Ravi Coordinator", role: "coordinator", hostelId: null, area: "Administration", assignedHostelIds: JSON.stringify([hostelId1, hostelId2]) },
-      { email: "admin@iitm.ac.in", name: "Admin IITM", role: "admin", hostelId: null, area: null, assignedHostelIds: "[]" },
-      { email: "superadmin@iitm.ac.in", name: "Super Admin", role: "superadmin", hostelId: null, area: null, assignedHostelIds: "[]" },
-      { email: "volunteer2@iitm.ac.in", name: "Suresh Volunteer", role: "volunteer", hostelId: hostelId2, area: "Operations", assignedHostelIds: "[]" },
+      {
+        email: "volunteer@iitm.ac.in",
+        name: "Priya Volunteer",
+        role: "volunteer",
+        hostelId: hostelId1,
+        area: "Operations",
+        assignedHostelIds: JSON.stringify([hostelId1]),
+        phone: "+91 9876543000",
+      },
+      {
+        email: "volunteer2@iitm.ac.in",
+        name: "Suresh Volunteer",
+        role: "volunteer",
+        hostelId: hostelId2,
+        area: "Operations",
+        assignedHostelIds: JSON.stringify([hostelId2]),
+        phone: "+91 9876543005",
+      },
+      {
+        email: "coordinator@iitm.ac.in",
+        name: "Ravi Coordinator",
+        role: "coordinator",
+        hostelId: hostelId1,
+        area: "Administration",
+        assignedHostelIds: JSON.stringify([hostelId1, hostelId2]),
+        phone: "+91 9876543001",
+      },
+      {
+        email: "admin@iitm.ac.in",
+        name: "Admin IITM",
+        role: "admin",
+        hostelId: null,
+        area: null,
+        assignedHostelIds: JSON.stringify(hostelIds),
+        phone: "+91 9876543002",
+      },
+      {
+        email: "superadmin@iitm.ac.in",
+        name: "Super Admin",
+        role: "superadmin",
+        hostelId: null,
+        area: null,
+        assignedHostelIds: JSON.stringify([]),
+        phone: "+91 9876543003",
+      },
     ];
 
     for (const u of staffAccounts) {
-      const pw = "123456";
       const passwordHash = await hashPassword(pw);
       await db.insert(usersTable).values({
-        id: generateId(), name: u.name, email: u.email,
-        passwordHash, role: u.role,
+        id: generateId(),
+        name: u.name,
+        email: u.email,
+        passwordHash,
+        role: u.role,
         hostelId: u.hostelId ?? undefined,
         area: u.area ?? undefined,
         assignedHostelIds: u.assignedHostelIds,
-        phone: `+91 98765${String(43000 + staffAccounts.indexOf(u)).padStart(5, "0")}`,
+        phone: u.phone,
         isActive: true,
       }).onConflictDoUpdate({
         target: usersTable.email,
-        set: { passwordHash, name: u.name, role: u.role },
+        set: {
+          passwordHash,
+          name: u.name,
+          role: u.role,
+          hostelId: u.hostelId ?? null,
+          area: u.area ?? null,
+          assignedHostelIds: u.assignedHostelIds,
+        },
       });
     }
 
@@ -66,7 +136,7 @@ export async function autoSeed() {
     const [{ count: studentCount }] = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.role, "student"));
     console.log(`[seed] Students in DB: ${studentCount} across ${hostelIds.length} hostels`);
 
-    if (Number(studentCount) === 0 && hostelIds.length > 0) {
+    if (Number(studentCount) <= 1 && hostelIds.length > 0) {
       const MESS_OPTIONS = [
         "Neelkesh - North - Veg", "Neelkesh - North - Non-Veg",
         "R Gouras - North - Veg", "R Gouras - North - Non-Veg",
@@ -102,7 +172,7 @@ export async function autoSeed() {
         const email = `student${i + 1}@iitm.ac.in`;
         await db.insert(usersTable).values({
           id: generateId(), name, email,
-          passwordHash: await hashPassword("123456"),
+          passwordHash: await hashPassword(pw),
           role: "student",
           rollNumber: roll,
           hostelId,
@@ -135,17 +205,16 @@ export async function autoSeed() {
     if (Number(annCount) === 0) {
       const [admin] = await db.select().from(usersTable).where(eq(usersTable.email, "admin@iitm.ac.in"));
       if (admin) {
-        const announcementsData = [
+        await db.insert(announcementsTable).values([
           { id: generateId(), title: "Welcome to CampusOps!", content: "Your centralized portal for hostel management, attendance tracking, inventory, and campus communications.", category: "general" as const, createdBy: admin.id },
           { id: generateId(), title: "Mess Timings", content: "Breakfast 7:00–9:00 AM | Lunch 12:00–2:00 PM | Dinner 7:00–9:30 PM", category: "hostel" as const, createdBy: admin.id },
           { id: generateId(), title: "Hostel Inventory Drive", content: "All students must submit mattress, bedsheet, and pillow details. Contact your hostel volunteer.", category: "hostel" as const, createdBy: admin.id },
-        ];
-        await db.insert(announcementsTable).values(announcementsData);
+        ]);
         console.log("[seed] Announcements created");
       }
     }
 
-    // --- Student Inventory Seed (first 40 students only) ---
+    // --- Student Inventory Seed ---
     const [{ count: invCount }] = await db.select({ count: count() }).from(studentInventoryTable);
     if (Number(invCount) < 10) {
       const students = await db.select({ id: usersTable.id, hostelId: usersTable.hostelId })

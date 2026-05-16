@@ -200,13 +200,13 @@ router.post("/reset-password/:id", requireSuperAdmin, async (req: AuthRequest, r
 });
 
 // DELETE /api/admin/admin-users/:id
-router.delete("/admin-users/:id", requireSuperAdmin, async (req: AuthRequest, res) => {
+router.delete("/admin-users/:id", requireAdmin, async (req: AuthRequest, res) => {
   await db.delete(usersTable).where(eq(usersTable.id, req.params.id));
   res.json({ success: true });
 });
 
 // PATCH /api/admin/assign-hostel/:id — assign hostel(s) to a staff member with role-based limits
-router.patch("/assign-hostel/:id", requireSuperAdmin, async (req: AuthRequest, res) => {
+router.patch("/assign-hostel/:id", requireAdmin, async (req: AuthRequest, res) => {
   const { hostelId, assignedHostelIds, area, role } = req.body;
   const [before] = await db.select({
     id: usersTable.id,
