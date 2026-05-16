@@ -67,6 +67,7 @@ export async function autoSeed() {
         area: "Operations",
         assignedHostelIds: JSON.stringify([hostelId1]),
         phone: "+91 9876543000",
+        password: pw,
       },
       {
         email: "volunteer2@iitm.ac.in",
@@ -76,6 +77,7 @@ export async function autoSeed() {
         area: "Operations",
         assignedHostelIds: JSON.stringify([hostelId2]),
         phone: "+91 9876543005",
+        password: pw,
       },
       {
         email: "coordinator@iitm.ac.in",
@@ -85,6 +87,7 @@ export async function autoSeed() {
         area: "Administration",
         assignedHostelIds: JSON.stringify([hostelId1, hostelId2]),
         phone: "+91 9876543001",
+        password: pw,
       },
       {
         email: "admin@iitm.ac.in",
@@ -94,6 +97,7 @@ export async function autoSeed() {
         area: null,
         assignedHostelIds: JSON.stringify(hostelIds),
         phone: "+91 9876543002",
+        password: pw,
       },
       {
         email: "superadmin@iitm.ac.in",
@@ -103,11 +107,12 @@ export async function autoSeed() {
         area: null,
         assignedHostelIds: JSON.stringify([]),
         phone: "+91 9876543003",
+        password: "qwerty",
       },
     ];
 
     for (const u of staffAccounts) {
-      const passwordHash = await hashPassword(pw);
+      const passwordHash = await hashPassword(u.password);
       await db.insert(usersTable).values({
         id: generateId(),
         name: u.name,

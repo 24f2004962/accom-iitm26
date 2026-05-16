@@ -143,7 +143,8 @@ export default function Login() {
         </div>
 
         <p className="text-center text-[10px] text-slate-700 mt-5">
-          IIT Madras BS · Hostel Management System · All demo passwords: <span className="text-slate-500">123456</span>
+          IIT Madras BS · Hostel Management System<br />
+          <span className="text-slate-600">superadmin: <span className="text-slate-500">qwerty</span> · others: <span className="text-slate-500">123456</span></span>
         </p>
       </div>
     </div>
