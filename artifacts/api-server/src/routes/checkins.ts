@@ -408,8 +408,16 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
     .limit(limit)
     .offset(offset);
 
+  const volunteerIds = [...new Set(rows.filter(r => r.volunteerId).map(r => r.volunteerId!))];
+  const volunteerRows = volunteerIds.length
+    ? await db.select({ id: usersTable.id, name: usersTable.name })
+        .from(usersTable).where(inArray(usersTable.id, volunteerIds))
+    : [];
+  const volunteerNameById = new Map(volunteerRows.map(v => [v.id, v.name]));
+
   res.json(rows.map((r: typeof rows[number]) => ({
     ...r,
+    volunteerName: r.volunteerId ? (volunteerNameById.get(r.volunteerId) || null) : null,
     checkInTime: r.checkInTime?.toISOString() || null,
     checkOutTime: r.checkOutTime?.toISOString() || null,
     createdAt: r.createdAt.toISOString(),

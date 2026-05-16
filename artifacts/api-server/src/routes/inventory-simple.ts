@@ -133,16 +133,32 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
       })
     : deduped;
 
+  const updatedByIds = [...new Set(Object.values(invMap).filter((r: any) => r.updatedBy).map((r: any) => r.updatedBy as string))];
+  const staffNameRows = updatedByIds.length
+    ? await db.select({ id: usersTable.id, name: usersTable.name })
+        .from(usersTable).where(inArray(usersTable.id, updatedByIds))
+    : [];
+  const staffNameById = new Map(staffNameRows.map(s => [s.id, s.name]));
+
   res.json(filteredStudents.map(s => {
     const today = checkinMap.get(s.id);
+    const inv = invMap[s.id];
     return {
       ...s,
       checkInTime: today?.checkInTime?.toISOString() || null,
       checkOutTime: today?.checkOutTime?.toISOString() || null,
-      inventory: invMap[s.id] || {
+      inventory: inv ? {
+        ...inv,
+        messCardGivenByName: inv.updatedBy ? (staffNameById.get(inv.updatedBy) || null) : null,
+        messCardGivenAt: inv.messCardGivenAt?.toISOString?.() || inv.messCardGivenAt || null,
+        messCardRevokedAt: inv.messCardRevokedAt?.toISOString?.() || inv.messCardRevokedAt || null,
+        lockedAt: inv.lockedAt?.toISOString?.() || inv.lockedAt || null,
+        updatedAt: inv.updatedAt?.toISOString?.() || inv.updatedAt || null,
+      } : {
         mattress: false, bedsheet: false, pillow: false,
         mattressSubmitted: false, bedsheetSubmitted: false, pillowSubmitted: false,
         messCard: false, inventoryLocked: false,
+        messCardGivenByName: null,
       },
     };
   }));
@@ -331,6 +347,46 @@ router.patch("/:studentId/mess-card", requireVolunteer, async (req: AuthRequest,
     messCardRevokedAt: record.messCardRevokedAt?.toISOString() || null,
     lockedAt: record.lockedAt?.toISOString() || null,
   });
+});
+
+// POST /api/inventory-simple/:studentId/revoke-submit — undo submission of individual items
+router.post("/:studentId/revoke-submit", requireVolunteer, async (req: AuthRequest, res) => {
+  const { mattress: mattressUnsubmit, bedsheet: bedsheetUnsubmit, pillow: pillowUnsubmit } = req.body;
+  const { studentId } = req.params;
+
+  const [student] = await db.select().from(usersTable).where(eq(usersTable.id, studentId));
+  if (!student) { res.status(404).json({ message: "Student not found" }); return; }
+
+  const [existing] = await db.select().from(studentInventoryTable)
+    .where(eq(studentInventoryTable.studentId, studentId));
+
+  if (!existing) {
+    res.status(400).json({ message: "No inventory record found." });
+    return;
+  }
+
+  const newMattressSubmitted = mattressUnsubmit ? false : (existing.mattressSubmitted ?? false);
+  const newBedsheetSubmitted = bedsheetUnsubmit ? false : (existing.bedsheetSubmitted ?? false);
+  const newPillowSubmitted = pillowUnsubmit ? false : (existing.pillowSubmitted ?? false);
+
+  const locked = computeLocked({
+    mattress: existing.mattress, bedsheet: existing.bedsheet, pillow: existing.pillow,
+    mattressSubmitted: newMattressSubmitted, bedsheetSubmitted: newBedsheetSubmitted, pillowSubmitted: newPillowSubmitted,
+  });
+
+  const now = new Date();
+  const [record] = await db.update(studentInventoryTable).set({
+    mattressSubmitted: newMattressSubmitted,
+    bedsheetSubmitted: newBedsheetSubmitted,
+    pillowSubmitted: newPillowSubmitted,
+    inventoryLocked: locked,
+    lockedBy: locked ? existing.lockedBy : null,
+    lockedAt: locked ? existing.lockedAt : null,
+    updatedBy: req.userId!,
+    updatedAt: now,
+  }).where(eq(studentInventoryTable.id, existing.id)).returning();
+
+  res.json(record);
 });
 
 // GET /api/inventory-simple/student/:studentId — single student inventory

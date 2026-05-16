@@ -2,12 +2,121 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { PageHeader, Card, Table, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
-import { ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, Clock } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, Clock, UserPlus, Search, X } from "lucide-react";
+import { format } from "date-fns";
 
 function fmt(ts?: string | null) {
   if (!ts) return "—";
   return new Date(ts).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour12: true, hour: "2-digit", minute: "2-digit" });
+}
+
+function CheckInModal({ visible, onClose, hostels, onSuccess }: { visible: boolean; onClose: () => void; hostels: any[]; onSuccess: () => void }) {
+  const qc = useQueryClient();
+  const [search, setSearch] = useState("");
+  const [hostelFilter, setHostelFilter] = useState("");
+  const [checking, setChecking] = useState<string | null>(null);
+  const [successIds, setSuccessIds] = useState<Set<string>>(new Set());
+
+  const { data: students = [], isLoading } = useQuery<any[]>({
+    queryKey: ["checkin-search", search, hostelFilter],
+    queryFn: () => apiFetch<any[]>(`/students?search=${encodeURIComponent(search)}&limit=30${hostelFilter ? `&hostelId=${hostelFilter}` : ""}`).then(r => Array.isArray(r) ? r : (r as any).students || []),
+    enabled: search.trim().length >= 2,
+    staleTime: 5000,
+  });
+
+  const checkInMut = useMutation({
+    mutationFn: (studentId: string) => apiFetch(`/checkins/${studentId}`, { method: "POST", body: JSON.stringify({}) }),
+    onSuccess: (_data, studentId) => {
+      setSuccessIds(prev => new Set([...prev, studentId]));
+      qc.invalidateQueries({ queryKey: ["checkins"] });
+      onSuccess();
+    },
+  });
+
+  async function handleCheckIn(studentId: string) {
+    setChecking(studentId);
+    try {
+      await checkInMut.mutateAsync(studentId);
+    } catch {}
+    setChecking(null);
+  }
+
+  if (!visible) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70" onClick={onClose}>
+      <div className="bg-[#0f0f13] border border-white/10 rounded-2xl w-full max-w-lg mx-4 p-6 shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-base font-bold text-white">Check In Student</h2>
+            <p className="text-xs text-slate-500">Search and mark a student as checked in</p>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="flex gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Search by name, roll, or email…"
+              className="w-full bg-white/5 border border-white/10 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all"
+              autoFocus
+            />
+          </div>
+          <select
+            value={hostelFilter}
+            onChange={e => setHostelFilter(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-300 outline-none focus:border-purple-500/60 transition-all"
+          >
+            <option value="">All Hostels</option>
+            {hostels.map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
+          </select>
+        </div>
+
+        <div className="max-h-72 overflow-y-auto rounded-xl border border-white/8 divide-y divide-white/5">
+          {search.trim().length < 2 ? (
+            <div className="py-8 text-center text-slate-500 text-sm">Type at least 2 characters to search</div>
+          ) : isLoading ? (
+            <div className="py-8 flex justify-center"><Spinner size={20} /></div>
+          ) : students.length === 0 ? (
+            <div className="py-8 text-center text-slate-500 text-sm">No students found</div>
+          ) : (
+            students.map((s: any) => {
+              const isSuccess = successIds.has(s.id);
+              const isChecking = checking === s.id;
+              return (
+                <div key={s.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/3 transition-colors">
+                  <div className="w-8 h-8 rounded-full bg-purple-600/20 border border-purple-500/30 flex items-center justify-center flex-shrink-0">
+                    <span className="text-purple-400 text-xs font-bold">{(s.name || "?")[0].toUpperCase()}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-slate-200 truncate">{s.name}</p>
+                    <p className="text-xs text-slate-500 truncate">{s.rollNumber || s.email} {s.roomNumber ? `· Room ${s.roomNumber}` : ""}</p>
+                    <p className="text-xs text-slate-600 truncate">{s.hostelName || "—"}</p>
+                  </div>
+                  <button
+                    onClick={() => handleCheckIn(s.id)}
+                    disabled={isChecking || isSuccess}
+                    className={`flex-shrink-0 text-xs px-3 py-1.5 rounded-lg border font-semibold transition-all disabled:opacity-60 ${
+                      isSuccess
+                        ? "bg-green-500/15 text-green-400 border-green-500/25"
+                        : "bg-purple-600/20 hover:bg-purple-600/30 text-purple-400 border-purple-500/30"
+                    }`}
+                  >
+                    {isChecking ? <Spinner size={12} /> : isSuccess ? "✓ Checked In" : "Check In"}
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default function Attendance() {
@@ -15,16 +124,12 @@ export default function Attendance() {
   const today = format(new Date(), "yyyy-MM-dd");
   const [date, setDate] = useState(today);
   const [hostelFilter, setHostelFilter] = useState("");
+  const [checkInModalOpen, setCheckInModalOpen] = useState(false);
 
   const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
   const { data: checkins = [], isLoading, refetch } = useQuery({
     queryKey: ["checkins", date, hostelFilter],
     queryFn: () => apiFetch<any[]>(`/checkins?date=${date}${hostelFilter ? `&hostelId=${hostelFilter}` : ""}&limit=500`),
-    refetchInterval: 15000,
-  });
-  const { data: stats } = useQuery({
-    queryKey: ["att-stats", date],
-    queryFn: () => apiFetch<any>(`/attendance/stats`),
     refetchInterval: 15000,
   });
 
@@ -50,9 +155,14 @@ export default function Attendance() {
         title="Attendance"
         subtitle="Check-in/out tracking for all students"
         action={
-          <Button variant="secondary" size="sm" onClick={() => downloadFile(`/export/attendance.csv?date=${date}`, `attendance-${date}.csv`)}>
-            <Download size={14} /> Export CSV
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="primary" size="sm" onClick={() => setCheckInModalOpen(true)}>
+              <UserPlus size={14} /> Check In Student
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => downloadFile(`/export/attendance.csv?date=${date}`, `attendance-${date}.csv`)}>
+              <Download size={14} /> Export CSV
+            </Button>
+          </div>
         }
       />
 
@@ -98,7 +208,7 @@ export default function Attendance() {
         ) : checkins.length === 0 ? (
           <EmptyState icon={ClipboardCheck} title="No check-ins found" sub="No attendance records for this date/hostel" />
         ) : (
-          <Table headers={["Student", "Roll", "Room", "Hostel", "Check In", "Check Out", "Status", "Actions"]}>
+          <Table headers={["Student", "Roll", "Room", "Hostel", "Marked By", "Check In", "Check Out", "Status", "Actions"]}>
             {checkins.map((c: any) => {
               const checkedOutNow = !!c.checkOutTime;
               return (
@@ -114,6 +224,7 @@ export default function Attendance() {
                   <td className="px-4 py-3 text-sm text-slate-400">
                     {hostels.find((h: any) => h.id === c.hostelId)?.name || "—"}
                   </td>
+                  <td className="px-4 py-3 text-xs text-slate-400">{c.volunteerName || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="text-sm font-medium text-green-400">{fmt(c.checkInTime)}</span>
                   </td>
@@ -162,6 +273,13 @@ export default function Attendance() {
           </Table>
         )}
       </Card>
+
+      <CheckInModal
+        visible={checkInModalOpen}
+        onClose={() => setCheckInModalOpen(false)}
+        hostels={hostels}
+        onSuccess={() => { qc.invalidateQueries({ queryKey: ["checkins"] }); refetch(); }}
+      />
     </div>
   );
 }

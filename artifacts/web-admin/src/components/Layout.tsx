@@ -5,17 +5,18 @@ import {
   LayoutDashboard, Users, Building2, UserCog,
   FileText, Upload, Activity, BarChart3, Megaphone,
   LogOut, Menu, X, ChevronRight, GraduationCap,
-  UtensilsCrossed, Package,
+  UtensilsCrossed, Package, History, ClipboardCheck,
 } from "lucide-react";
 
 export type Page =
-  | "dashboard" | "students" | "mess" | "inventory" | "hostels"
+  | "dashboard" | "students" | "attendance" | "mess" | "inventory" | "hostels"
   | "staff" | "announcements" | "csv-import" | "activity-logs"
-  | "reports" | "master-table" | "manage-admins";
+  | "reports" | "master-table" | "manage-admins" | "history";
 
 const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] }[] = [
   { id: "dashboard",     label: "Dashboard",      icon: LayoutDashboard },
   { id: "students",      label: "Students",        icon: Users },
+  { id: "attendance",    label: "Attendance",      icon: ClipboardCheck },
   { id: "mess",          label: "Mess Cards",      icon: UtensilsCrossed },
   { id: "inventory",     label: "Inventory",       icon: Package },
   { id: "hostels",       label: "Hostels",         icon: Building2 },
@@ -24,6 +25,7 @@ const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] 
   { id: "master-table",  label: "Master Table",    icon: GraduationCap, roles: ["superadmin", "admin"] },
   { id: "csv-import",    label: "CSV Import",      icon: Upload, roles: ["superadmin"] },
   { id: "activity-logs", label: "Activity Logs",   icon: Activity },
+  { id: "history",       label: "History",         icon: History, roles: ["superadmin", "admin"] },
   { id: "reports",       label: "Reports",         icon: BarChart3, roles: ["superadmin", "admin"] },
   { id: "manage-admins", label: "Manage Staff",    icon: FileText, roles: ["superadmin"] },
 ];

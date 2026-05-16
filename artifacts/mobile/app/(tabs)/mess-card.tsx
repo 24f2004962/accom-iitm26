@@ -127,6 +127,11 @@ function StudentDetailSheet({ selected, selectedDetails, visible, onClose, onCon
                     Given at {fmt(selected.messCardGivenAt)}
                   </Text>
                 )}
+                {!!selected.messCardGivenByName && hasPass && (
+                  <Text style={[sd.statusSub, { color: theme.textSecondary }]}>
+                    Last given by {selected.messCardGivenByName}
+                  </Text>
+                )}
               </View>
             </View>
 
@@ -400,9 +405,16 @@ export default function MessCardTabScreen() {
                   {item.roomNumber ? `Room ${item.roomNumber}` : "No room"}
                 </Text>
                 {item.messCard ? (
-                  <Text style={[styles.meta, { color: "#22c55e" }]} numberOfLines={1}>
-                    Given {item.messCardGivenAt ? `· ${fmt(item.messCardGivenAt)}` : ""}
-                  </Text>
+                  <>
+                    <Text style={[styles.meta, { color: "#22c55e" }]} numberOfLines={1}>
+                      Given {item.messCardGivenAt ? `· ${fmt(item.messCardGivenAt)}` : ""}
+                    </Text>
+                    {!!item.messCardGivenByName && (
+                      <Text style={[styles.meta, { color: theme.textTertiary }]} numberOfLines={1}>
+                        By {item.messCardGivenByName}
+                      </Text>
+                    )}
+                  </>
                 ) : (
                   <Text style={[styles.meta, { color: theme.textTertiary }]}>Pass not issued</Text>
                 )}

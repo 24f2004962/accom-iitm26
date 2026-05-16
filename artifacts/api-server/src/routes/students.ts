@@ -246,6 +246,7 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
         messCard: studentInventoryTable.messCard,
         messCardGivenAt: studentInventoryTable.messCardGivenAt,
         messCardRevokedAt: studentInventoryTable.messCardRevokedAt,
+        updatedBy: studentInventoryTable.updatedBy,
       }).from(studentInventoryTable).where(inArray(studentInventoryTable.studentId, studentIds))
     : [];
 
@@ -261,6 +262,14 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
     : [];
 
   const inventoryMap = new Map(inventoryRows.map(r => [r.studentId, r]));
+
+  const updatedByIds = [...new Set(inventoryRows.filter(r => r.updatedBy).map(r => r.updatedBy!))];
+  const staffNameRows = updatedByIds.length
+    ? await db.select({ id: usersTable.id, name: usersTable.name })
+        .from(usersTable).where(inArray(usersTable.id, updatedByIds))
+    : [];
+  const staffNameById = new Map(staffNameRows.map(s => [s.id, s.name]));
+
   const checkinMap = new Map<string, { checkInTime: Date | null; checkOutTime: Date | null }>();
   for (const row of checkinRows) {
     const prev = checkinMap.get(row.studentId);
@@ -278,6 +287,7 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
       messCard: !!inv?.messCard,
       messCardGivenAt: inv?.messCardGivenAt?.toISOString() || null,
       messCardRevokedAt: inv?.messCardRevokedAt?.toISOString() || null,
+      messCardGivenByName: inv?.updatedBy ? (staffNameById.get(inv.updatedBy) || null) : null,
       checkInTime: checkin?.checkInTime?.toISOString() || null,
       checkOutTime: checkin?.checkOutTime?.toISOString() || null,
       gender: csv?.gender || null,

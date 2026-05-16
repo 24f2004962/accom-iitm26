@@ -97,7 +97,7 @@ export default function Mess() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={UtensilsCrossed} title="No students found" sub="Select a hostel or search to filter students" />
         ) : (
-          <Table headers={["Student", "Roll No", "Room", "Hostel", "Mess Card", "Given At / Revoked At", "Action"]}>
+          <Table headers={["Student", "Roll No", "Room", "Hostel", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
             {filtered.map((s: any) => {
               const inv = s.inventory || {};
               const hasCard = !!inv.messCard;
@@ -126,6 +126,7 @@ export default function Mess() {
                     <Badge label={hasCard ? "Given" : "Not Given"} color={hasCard ? "green" : "gray"} />
                   </td>
                   <td className="px-4 py-3 text-xs text-slate-500">{timeDisplay}</td>
+                  <td className="px-4 py-3 text-xs text-slate-400">{inv.messCardGivenByName || "—"}</td>
                   <td className="px-4 py-3">
                     {hasCard ? (
                       <button

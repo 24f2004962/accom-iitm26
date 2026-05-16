@@ -15,11 +15,14 @@ import ActivityLogs from "@/pages/ActivityLogs";
 import Reports from "@/pages/Reports";
 import MasterTable from "@/pages/MasterTable";
 import ManageAdmins from "@/pages/ManageAdmins";
+import History from "@/pages/History";
+import Attendance from "@/pages/Attendance";
 import { Spinner } from "@/components/ui";
 
 const PAGES: Record<Page, React.ComponentType> = {
   dashboard: Dashboard,
   students: Students,
+  attendance: Attendance,
   mess: Mess,
   inventory: Inventory,
   hostels: Hostels,
@@ -30,6 +33,7 @@ const PAGES: Record<Page, React.ComponentType> = {
   reports: Reports,
   "master-table": MasterTable,
   "manage-admins": ManageAdmins,
+  history: History,
 };
 
 function AppInner() {

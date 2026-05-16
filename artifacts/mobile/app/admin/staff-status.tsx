@@ -247,7 +247,6 @@ export default function StaffStatusScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [selected, setSelected] = useState<any>(null);
-  const [search, setSearch] = useState("");
   const [onlineFilter, setOnlineFilter] = useState<"all"|"online"|"offline">("all");
   const [roleFilter, setRoleFilter] = useState<"all"|"admins"|"volunteers">("all");
   const [reassigning, setReassigning] = useState(false);
@@ -364,17 +363,14 @@ export default function StaffStatusScreen() {
   }, [hostelNameById]);
 
   const filtered = React.useMemo(() => {
-    const q = search.trim().toLowerCase();
     return scopedStaff.filter(s => {
       if (onlineFilter === "online"  && !s.isOnline) return false;
       if (onlineFilter === "offline" && s.isOnline)  return false;
       if (roleFilter === "admins"     && !["admin","coordinator","superadmin"].includes(s.role)) return false;
       if (roleFilter === "volunteers" && s.role !== "volunteer") return false;
-      if (!q) return true;
-      const hay = [s.name, s.email, resolveHostel(s), s.role].filter(Boolean).join(" ").toLowerCase();
-      return hay.includes(q);
+      return true;
     });
-  }, [scopedStaff, search, onlineFilter, roleFilter, resolveHostel]);
+  }, [scopedStaff, onlineFilter, roleFilter]);
 
   const onlineCount   = scopedStaff.filter(s => s.isOnline).length;
   const offlineCount  = scopedStaff.filter(s => !s.isOnline).length;
@@ -511,23 +507,6 @@ export default function StaffStatusScreen() {
                   <Text style={[S.statLbl, { color: theme.textSecondary }]}>{p.label}</Text>
                 </View>
               ))}
-            </View>
-
-            {/* ── Search ── */}
-            <View style={[S.searchBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-              <Feather name="search" size={14} color={theme.textSecondary} />
-              <TextInput
-                value={search} onChangeText={setSearch}
-                placeholder="Search name, email, hostel, role…"
-                placeholderTextColor={theme.textTertiary}
-                style={[S.searchIn, { color: theme.text }]}
-                autoCapitalize="none"
-              />
-              {search.length > 0 && (
-                <Pressable onPress={() => setSearch("")} hitSlop={8}>
-                  <Feather name="x" size={14} color={theme.textSecondary} />
-                </Pressable>
-              )}
             </View>
 
             {/* ── Role filter ── */}
