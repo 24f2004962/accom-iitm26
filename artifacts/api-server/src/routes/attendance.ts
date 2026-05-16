@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, attendanceTable, usersTable, studentInventoryTable, checkinsTable } from "@workspace/db";
+import { db, attendanceTable, usersTable, studentInventoryTable, checkinsTable, timeLogsTable } from "@workspace/db";
 import { eq, and, sql, inArray } from "drizzle-orm";
 import { requireAuth, requireAdmin, requireVolunteer, generateId, AuthRequest, COORDINATOR_ROLES } from "../lib/auth.js";
 
@@ -335,6 +335,15 @@ router.post("/inventory/:studentId/submit-item", requireVolunteer, async (req: A
     }).returning();
   }
 
+  // Log inventory submit action
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    hostelId: student.hostelId || null,
+    type: "inventory",
+    note: `Submitted ${item} for student ${studentId}`,
+  });
+
   res.json({ ...record, lockedAt: record.lockedAt?.toISOString() || null });
 });
 
@@ -449,6 +458,15 @@ router.patch("/mess-card/:studentId", requireVolunteer, async (req: AuthRequest,
   const now = new Date();
   const givenAt = newMessCard ? now : null;
   const revokedAt = newMessCard ? null : now;
+
+  // Log mess card action
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    hostelId: student.hostelId || null,
+    type: "mess-card",
+    note: `${newMessCard ? "Gave" : "Revoked"} mess card for student ${studentId}`,
+  });
 
   if (existing) {
     const [updated] = await db.update(studentInventoryTable).set({

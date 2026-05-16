@@ -421,7 +421,7 @@ function AttendanceModal({
                       key={`submit-${item}`}
                       label={item.charAt(0).toUpperCase() + item.slice(1)}
                       icon={isSubmitted ? "check-circle" : "upload"}
-                      done={canGiveInventory && isSubmitted}
+                      done={canGiveInventory && !!isGiven && !!isSubmitted}
                       disabled={!isGiven || isSubmitted || !canGiveInventory}
                       onPress={() => submitItem(item, true)}
                       loading={actionLoading === `submit-${item}`}

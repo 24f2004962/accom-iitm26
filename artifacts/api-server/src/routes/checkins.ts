@@ -150,6 +150,15 @@ router.post("/:studentId", requireVolunteer, async (req: AuthRequest, res) => {
     .set({ attendanceStatus: "entered" })
     .where(eq(usersTable.id, studentId));
 
+  // Log check-in action
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    hostelId: student.hostelId || null,
+    type: "checkin",
+    note: `Checked in student ${studentId}`,
+  });
+
   res.status(201).json({
     ...record,
     checkInTime: record.checkInTime?.toISOString() || null,
@@ -211,6 +220,15 @@ router.patch("/:id/checkout", requireVolunteer, async (req: AuthRequest, res) =>
       date: checkin.date,
     });
   }
+
+  // Log checkout action
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    hostelId: checkin.hostelId || null,
+    type: "checkout",
+    note: `Checked out student ${checkin.studentId}`,
+  });
 
   res.json({
     ...record,
