@@ -41,21 +41,25 @@ export async function autoSeed() {
       { email: "volunteer@iitm.ac.in", name: "Priya Volunteer", role: "volunteer", hostelId: hostelId1, area: "Operations", assignedHostelIds: "[]" },
       { email: "coordinator@iitm.ac.in", name: "Ravi Coordinator", role: "coordinator", hostelId: null, area: "Administration", assignedHostelIds: JSON.stringify([hostelId1, hostelId2]) },
       { email: "admin@iitm.ac.in", name: "Admin IITM", role: "admin", hostelId: null, area: null, assignedHostelIds: "[]" },
-      { email: "superadmin@iitm.ac.in", name: "Super Admin", role: "superadmin", hostelId: null, area: null, assignedHostelIds: "[]", password: "qwerty" },
+      { email: "superadmin@iitm.ac.in", name: "Super Admin", role: "superadmin", hostelId: null, area: null, assignedHostelIds: "[]" },
       { email: "volunteer2@iitm.ac.in", name: "Suresh Volunteer", role: "volunteer", hostelId: hostelId2, area: "Operations", assignedHostelIds: "[]" },
     ];
 
     for (const u of staffAccounts) {
-      const pw = (u as any).password || "123456";
+      const pw = "123456";
+      const passwordHash = await hashPassword(pw);
       await db.insert(usersTable).values({
         id: generateId(), name: u.name, email: u.email,
-        passwordHash: await hashPassword(pw), role: u.role,
+        passwordHash, role: u.role,
         hostelId: u.hostelId ?? undefined,
         area: u.area ?? undefined,
         assignedHostelIds: u.assignedHostelIds,
         phone: `+91 98765${String(43000 + staffAccounts.indexOf(u)).padStart(5, "0")}`,
         isActive: true,
-      }).onConflictDoNothing();
+      }).onConflictDoUpdate({
+        target: usersTable.email,
+        set: { passwordHash, name: u.name, role: u.role },
+      });
     }
 
     // --- Demo Students (seed 60 if none exist) ---

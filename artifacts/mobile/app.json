@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CampusOps",
-    "slug": "campusops",
+    "slug": "qwert",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -68,12 +68,12 @@
         "headOrigin": "https://localhost"
       },
       "eas": {
-        "projectId": "0533180b-87ac-4b76-82a8-c48de7d426c7"
+        "projectId": "949f8de0-55d2-4d3d-bb1f-509196beba62"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "sportifykartik"
+    "owner": "uuyhb"
   }
 }
