@@ -1,6 +1,13 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { GraduationCap, Eye, EyeOff, AlertCircle } from "lucide-react";
+import { GraduationCap, Eye, EyeOff, AlertCircle, ChevronDown } from "lucide-react";
+
+const DEMO_ACCOUNTS = [
+  { email: "superadmin@iitm.ac.in", password: "qwerty",  role: "Super Admin",  badge: "bg-purple-500/20 text-purple-300 border-purple-500/30" },
+  { email: "admin@iitm.ac.in",       password: "123456",  role: "Admin",         badge: "bg-blue-500/20 text-blue-300 border-blue-500/30" },
+  { email: "coordinator@iitm.ac.in", password: "123456",  role: "Coordinator",   badge: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30" },
+  { email: "volunteer@iitm.ac.in",   password: "123456",  role: "Volunteer",     badge: "bg-green-500/20 text-green-300 border-green-500/30" },
+];
 
 export default function Login() {
   const { login } = useAuth();
@@ -9,6 +16,7 @@ export default function Login() {
   const [showPw, setShowPw] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showDemo, setShowDemo] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -21,6 +29,13 @@ export default function Login() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function fillDemo(acc: typeof DEMO_ACCOUNTS[0]) {
+    setEmail(acc.email);
+    setPassword(acc.password);
+    setShowDemo(false);
+    setError("");
   }
 
   return (
@@ -97,7 +112,44 @@ export default function Login() {
           </form>
         </div>
 
-        <p className="text-center text-[10px] text-slate-700 mt-5">
+        {/* Demo credentials */}
+        <div className="mt-3">
+          <button
+            type="button"
+            onClick={() => setShowDemo((v) => !v)}
+            className="w-full flex items-center justify-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors py-2"
+          >
+            <span>Demo accounts</span>
+            <ChevronDown size={13} className={`transition-transform ${showDemo ? "rotate-180" : ""}`} />
+          </button>
+
+          {showDemo && (
+            <div className="bg-[#161620] border border-white/8 rounded-2xl overflow-hidden shadow-xl mt-1">
+              {DEMO_ACCOUNTS.map((acc) => (
+                <button
+                  key={acc.email}
+                  type="button"
+                  onClick={() => fillDemo(acc)}
+                  className="w-full flex items-center justify-between px-4 py-3 hover:bg-white/4 transition-colors border-b border-white/5 last:border-0 text-left group"
+                >
+                  <div>
+                    <div className="text-xs text-slate-200 font-medium group-hover:text-white transition-colors">
+                      {acc.email}
+                    </div>
+                    <div className="text-[10px] text-slate-600 mt-0.5 font-mono">
+                      password: <span className="text-slate-400">{acc.password}</span>
+                    </div>
+                  </div>
+                  <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${acc.badge}`}>
+                    {acc.role}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <p className="text-center text-[10px] text-slate-700 mt-4">
           IIT Madras BS · Hostel Management System
         </p>
       </div>
