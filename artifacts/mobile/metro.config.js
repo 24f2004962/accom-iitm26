@@ -1,34 +1,49 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const path = require("path");
+const fs = require("fs");
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
 
 const config = getDefaultConfig(projectRoot);
 
-// ─── Monorepo support ─────────────────────────────────────────────────────────
-// Watch both the mobile app root and the workspace root (lib/*, etc.)
-config.watchFolders = [workspaceRoot];
+// ─── Monorepo support (local dev / Replit only) ────────────────────────────────
+// In EAS builds the project is extracted to an isolated /home/expo/workingdir/build/
+// directory — the workspace root doesn't exist there, so we gate these settings.
+const isWorkspace = fs.existsSync(path.join(workspaceRoot, "pnpm-workspace.yaml"));
+if (isWorkspace) {
+  config.watchFolders = [workspaceRoot];
+  config.resolver.nodeModulesPaths = [
+    path.resolve(projectRoot, "node_modules"),
+    path.resolve(workspaceRoot, "node_modules"),
+  ];
+}
 
-// Resolve packages from the mobile app's node_modules first, then workspace root
-config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, "node_modules"),
-  path.resolve(workspaceRoot, "node_modules"),
-];
-
-// ─── pnpm symlink fix ─────────────────────────────────────────────────────────
-// pnpm stores packages in a deep virtual store (.pnpm/expo@55.x/node_modules/expo/).
-// When Metro follows symlinks, it resolves '../../App' from expo/AppEntry.js
-// relative to that deep real path instead of the project root — causing build
-// failures in EAS / production Android builds.
+// ─── pnpm symlink / EAS entry-point fix ───────────────────────────────────────
+// pnpm stores packages inside a deep virtual store:
+//   node_modules/.pnpm/expo@55.x/node_modules/expo/AppEntry.js
+// AppEntry.js does:  import App from '../../App'
+// That resolves to the pnpm store parent, NOT the project root — breaking builds.
 //
-// Pre-resolve expo-router/entry-classic at config load time (relative to this
-// file, where node_modules are correctly set up) and return the absolute path
-// directly so Metro never needs to re-resolve from the wrong deep pnpm context.
-const EXPO_ROUTER_ENTRY = require.resolve("expo-router/entry-classic");
+// Strategy: intercept the broken resolution and redirect it to expo-router's
+// correct entry file.  We try entry-classic first (SDK 52/53 compat shim),
+// then plain entry (SDK 55+), and wrap both in try-catch so a missing export
+// never crashes this config file (which would silently disable the interceptor).
+let EXPO_ROUTER_ENTRY = null;
+try {
+  EXPO_ROUTER_ENTRY = require.resolve("expo-router/entry-classic");
+} catch (_) {
+  try {
+    EXPO_ROUTER_ENTRY = require.resolve("expo-router/entry");
+  } catch (_2) {
+    // Will be caught by the null-guard in resolveRequest below
+    console.warn("[metro.config] Could not resolve expo-router entry — pnpm fix disabled.");
+  }
+}
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
   if (
+    EXPO_ROUTER_ENTRY &&
     moduleName === "../../App" &&
     typeof context.originModulePath === "string" &&
     context.originModulePath.includes("/expo/AppEntry")
