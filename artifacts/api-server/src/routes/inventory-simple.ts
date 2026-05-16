@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { db, studentInventoryTable, usersTable, checkinsTable } from "@workspace/db";
+import { db, studentInventoryTable, usersTable, checkinsTable, timeLogsTable } from "@workspace/db";
 import { eq, and, inArray } from "drizzle-orm";
 import { requireAuth, requireVolunteer, generateId, AuthRequest, COORDINATOR_ROLES } from "../lib/auth.js";
 
@@ -385,6 +385,15 @@ router.post("/:studentId/revoke-submit", requireVolunteer, async (req: AuthReque
     updatedBy: req.userId!,
     updatedAt: now,
   }).where(eq(studentInventoryTable.id, existing.id)).returning();
+
+  const revokedItems = [mattressUnsubmit && "mattress", bedsheetUnsubmit && "bedsheet", pillowUnsubmit && "pillow"].filter(Boolean).join(", ");
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    type: "revoke-submit",
+    note: `Revoked inventory submission (${revokedItems}) for student ${studentId}`,
+    hostelId: student.hostelId || null,
+  });
 
   res.json(record);
 });

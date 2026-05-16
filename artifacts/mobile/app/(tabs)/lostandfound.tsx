@@ -73,16 +73,18 @@ interface CheckinState {
 // ─── Step Button ────────────────────────────────────────────────────────────────
 
 function StepButton({
-  label, icon, done, disabled, danger, onPress, loading, theme,
+  label, icon, done, disabled, danger, onPress, onLongPress, loading, theme,
 }: {
   label: string; icon: string; done?: boolean; disabled?: boolean; danger?: boolean;
-  onPress: () => void; loading?: boolean; theme: any;
+  onPress: () => void; onLongPress?: () => void; loading?: boolean; theme: any;
 }) {
   const bg = done ? "#22c55e" : danger ? "#ef4444" : disabled ? theme.surface : theme.tint;
   const textColor = disabled ? theme.textTertiary : "#fff";
   return (
     <Pressable
       onPress={() => { if (!disabled && !loading) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); onPress(); } }}
+      onLongPress={() => { if (!loading && onLongPress) { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); onLongPress(); } }}
+      delayLongPress={600}
       style={[
         styles.stepBtn,
         { backgroundColor: bg, borderColor: done ? "#16a34a" : disabled ? theme.border : "transparent", opacity: disabled ? 0.55 : 1 },
@@ -223,6 +225,22 @@ function AttendanceModal({
     }));
   };
 
+  const revokeItem = (item: "mattress" | "bedsheet" | "pillow") => {
+    const key = `${item}Submitted` as keyof typeof inv;
+    // Optimistic: un-submit but keep given=true so volunteer can re-submit
+    const optimistic: CheckinState = { checkin, inventory: { ...inv, [key]: false, inventoryLocked: false } };
+    confirmAsync(
+      `Undo ${item.charAt(0).toUpperCase() + item.slice(1)} Submission?`,
+      `This will mark the ${item} as not yet returned. You can re-submit after the student hands it back.`,
+    ).then(ok => {
+      if (!ok) return;
+      doOptimistic(`revoke-${item}`, optimistic, () => request(`/inventory-simple/${student.id}/revoke-submit`, {
+        method: "POST",
+        body: JSON.stringify({ [item]: true }),
+      }));
+    });
+  };
+
   const checkOut = () => {
     if (!checkin) return;
     const optimistic: CheckinState = { checkin: { ...checkin, checkOutTime: new Date().toISOString() }, inventory: inv };
@@ -313,6 +331,12 @@ function AttendanceModal({
               {student.roomNumber ? ` · Room ${student.roomNumber}` : ""}
             </Text>
             <Text style={[styles.modalSub, { color: theme.textTertiary }]}>Mess: {student.assignedMess || student.allottedMess || "—"}</Text>
+            {!!student.checkedInByName && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 2 }}>
+                <Feather name="user-check" size={11} color="#8b5cf6" />
+                <Text style={[styles.modalSub, { color: "#8b5cf6" }]}>Checked in by {student.checkedInByName}</Text>
+              </View>
+            )}
           </View>
           <Pressable onPress={onClose} style={styles.closeBtn} hitSlop={12}>
             <Feather name="x" size={22} color={theme.textSecondary} />
@@ -416,36 +440,44 @@ function AttendanceModal({
                   const submitKey = `${item}Submitted` as "mattressSubmitted" | "bedsheetSubmitted" | "pillowSubmitted";
                   const isGiven = inv[item];
                   const isSubmitted = inv[submitKey];
+                  const isDone = canGiveInventory && !!isGiven && !!isSubmitted;
                   return (
                     <StepButton
                       key={`submit-${item}`}
                       label={item.charAt(0).toUpperCase() + item.slice(1)}
                       icon={isSubmitted ? "check-circle" : "upload"}
-                      done={canGiveInventory && !!isGiven && !!isSubmitted}
+                      done={isDone}
                       disabled={!isGiven || isSubmitted || !canGiveInventory}
                       onPress={() => submitItem(item, true)}
-                      loading={actionLoading === `submit-${item}`}
+                      onLongPress={isDone ? () => revokeItem(item) : undefined}
+                      loading={actionLoading === `submit-${item}` || actionLoading === `revoke-${item}`}
                       theme={theme}
                     />
                   );
                 })}
               </View>
+              {canGiveInventory && (inv.mattressSubmitted || inv.bedsheetSubmitted || inv.pillowSubmitted) && (
+                <View style={[styles.hintBox, { backgroundColor: "#8b5cf610", borderColor: "#8b5cf630" }]}>
+                  <Feather name="info" size={13} color="#8b5cf6" />
+                  <Text style={[styles.hintText, { color: theme.textSecondary }]}>Hold a green button to undo a submission.</Text>
+                </View>
+              )}
               {!inv.mattress && !inv.bedsheet && !inv.pillow && isCheckedIn && (
                 <View style={[styles.hintBox, { backgroundColor: "#f59e0b10", borderColor: "#f59e0b30" }]}>
                   <Feather name="info" size={13} color="#f59e0b" />
                   <Text style={[styles.hintText, { color: theme.textSecondary }]}>No items given yet. Give items above to enable submission.</Text>
                 </View>
               )}
-              {inv.mattress && inv.bedsheet && inv.pillow && !inv.inventoryLocked && isCheckedIn && (
+              {(inv.mattress || inv.bedsheet || inv.pillow) && !inv.inventoryLocked && isCheckedIn && (
                 <View style={[styles.hintBox, { backgroundColor: "#3b82f610", borderColor: "#3b82f630" }]}>
                   <Feather name="info" size={13} color="#3b82f6" />
-                  <Text style={[styles.hintText, { color: theme.textSecondary }]}>Submit all given items to enable checkout.</Text>
+                  <Text style={[styles.hintText, { color: theme.textSecondary }]}>Submit all given items, then check out.</Text>
                 </View>
               )}
               {hasAttendanceSession && inv.inventoryLocked && (
                 <View style={[styles.hintBox, { backgroundColor: "#22c55e10", borderColor: "#22c55e30" }]}>
                   <Feather name="check-circle" size={13} color="#22c55e" />
-                  <Text style={[styles.hintText, { color: "#22c55e" }]}>All inventory submitted. Ready for checkout.</Text>
+                  <Text style={[styles.hintText, { color: "#22c55e" }]}>All given items returned. Ready for checkout.</Text>
                 </View>
               )}
 

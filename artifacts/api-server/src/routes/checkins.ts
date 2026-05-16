@@ -276,7 +276,7 @@ router.delete("/:studentId/today", requireVolunteer, async (req: AuthRequest, re
   await db.insert(timeLogsTable).values({
     id: generateId(),
     userId: req.userId!,
-    type: "checkin",
+    type: "revoke-checkin",
     note: `Revoked check-in for student ${studentId}`,
     hostelId: student.hostelId || null,
   });
@@ -320,7 +320,7 @@ router.patch("/:id/revoke-checkout", requireVolunteer, async (req: AuthRequest, 
   await db.insert(timeLogsTable).values({
     id: generateId(),
     userId: req.userId!,
-    type: "checkin",
+    type: "revoke-checkout",
     note: `Revoked checkout for student ${checkin.studentId}`,
     hostelId: checkin.hostelId || null,
   });

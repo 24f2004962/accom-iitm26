@@ -10,6 +10,12 @@ const TYPE_MAP: Record<string, [string, "purple" | "green" | "blue" | "yellow" |
   active: ["Active", "blue"],
   inactive: ["Inactive", "gray"],
   checkin: ["Check-in", "purple"],
+  checkout: ["Check-out", "blue"],
+  "revoke-checkin": ["Revoke Check-in", "red"],
+  "revoke-checkout": ["Revoke Check-out", "red"],
+  "revoke-submit": ["Revoke Inventory", "red"],
+  inventory: ["Inventory", "blue"],
+  "mess-card": ["Mess Card", "yellow"],
   entry: ["Entry", "yellow"],
   custom: ["Custom", "gray"],
 };

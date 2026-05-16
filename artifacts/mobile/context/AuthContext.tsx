@@ -72,7 +72,7 @@ function resolvedBase(): string {
   return API_BASE;
 }
 
-async function safeJsonFetch(url: string, opts: RequestInit, timeoutMs = 15000): Promise<Response> {
+async function safeJsonFetch(url: string, opts: RequestInit, timeoutMs = 15000, retries = 1): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
@@ -82,9 +82,15 @@ async function safeJsonFetch(url: string, opts: RequestInit, timeoutMs = 15000):
   } catch (e: any) {
     clearTimeout(timer);
     if (e?.name === "AbortError") {
-      throw new Error("Request timed out. Check your connection.");
+      // Retry once before giving up on timeout
+      if (retries > 0) return safeJsonFetch(url, opts, timeoutMs, retries - 1);
+      throw new Error("Request timed out. Check your connection and try again.");
     }
-    // Network-level error (no wifi, airplane mode, etc.)
+    // Retry once on network errors (flaky wifi, brief dropouts)
+    if (retries > 0) {
+      await new Promise(r => setTimeout(r, 1200));
+      return safeJsonFetch(url, opts, timeoutMs, retries - 1);
+    }
     throw new Error("Network error. Make sure you're connected to the internet.");
   }
 }
@@ -102,6 +108,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const base = resolvedBase();
 
   useEffect(() => { loadStoredAuth(); }, []);
+
+  // Refresh user profile every 90s so role/hostel changes from web take effect
+  useEffect(() => {
+    if (!state.token) return;
+    const timer = setInterval(refreshUser, 90000);
+    return () => clearInterval(timer);
+  }, [state.token]);
 
   async function loadStoredAuth() {
     try {
@@ -126,8 +139,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, 10000);
       if (!res.ok) return null;
       const data = await parseJson(res);
-      return data?.id ? data : null;
-    } catch { return null; }
+      if (data?.id) {
+        // Cache for offline use — role/hostel changes from web land here too
+        await AsyncStorage.setItem("cached_user", JSON.stringify(data)).catch(() => {});
+        return data;
+      }
+      return null;
+    } catch {
+      // Offline fallback: return last-known profile so the app stays usable
+      try {
+        const cached = await AsyncStorage.getItem("cached_user");
+        if (cached) return JSON.parse(cached) as User;
+      } catch {}
+      return null;
+    }
   }
 
   async function login(email: string, password: string) {

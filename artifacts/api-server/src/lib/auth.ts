@@ -65,8 +65,19 @@ export async function requireAuth(
       userId: string;
       role: string;
     };
+    // Always fetch fresh role/hostelId from DB so changes made via the web
+    // admin portal (role change, hostel reassignment) take effect immediately
+    // without the user needing to log out and back in.
+    const [freshUser] = await db
+      .select({ role: usersTable.role, hostelId: usersTable.hostelId, assignedHostelIds: usersTable.assignedHostelIds })
+      .from(usersTable)
+      .where(eq(usersTable.id, decoded.userId));
+    if (!freshUser) {
+      res.status(401).json({ error: "Unauthorized", message: "User account not found" });
+      return;
+    }
     req.userId = decoded.userId;
-    req.userRole = decoded.role;
+    req.userRole = freshUser.role;
     next();
   } catch {
     res.status(401).json({ error: "Unauthorized", message: "Invalid token" });

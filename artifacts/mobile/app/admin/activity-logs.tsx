@@ -16,16 +16,19 @@ import { useApiRequest, useAuth, API_BASE } from "@/context/AuthContext";
 const LIVE_REFRESH_MS = 5000;
 
 const LOG_TYPES: Record<string, { icon: string; color: string; label: string }> = {
-  active:     { icon: "sun",           color: "#22c55e", label: "Went Active" },
-  inactive:   { icon: "moon",          color: "#6B7280", label: "Went Inactive" },
-  login:      { icon: "log-in",        color: "#3b82f6", label: "Login" },
-  logout:     { icon: "log-out",       color: "#ef4444", label: "Logout" },
-  checkin:    { icon: "check-circle",  color: "#8b5cf6", label: "Student Check-in" },
-  checkout:   { icon: "log-out",       color: "#6366f1", label: "Student Check-out" },
-  entry:      { icon: "arrow-right",   color: "#f59e0b", label: "Entry" },
-  inventory:  { icon: "package",       color: "#0ea5e9", label: "Inventory" },
-  "mess-card":{ icon: "credit-card",   color: "#f97316", label: "Mess Card" },
-  custom:     { icon: "edit-2",        color: "#06b6d4", label: "Custom" },
+  active:           { icon: "sun",           color: "#22c55e", label: "Went Active" },
+  inactive:         { icon: "moon",          color: "#6B7280", label: "Went Inactive" },
+  login:            { icon: "log-in",        color: "#3b82f6", label: "Login" },
+  logout:           { icon: "log-out",       color: "#ef4444", label: "Logout" },
+  checkin:          { icon: "check-circle",  color: "#8b5cf6", label: "Check-in" },
+  checkout:         { icon: "log-out",       color: "#6366f1", label: "Check-out" },
+  "revoke-checkin": { icon: "x-circle",      color: "#ef4444", label: "Revoke Check-in" },
+  "revoke-checkout":{ icon: "x-circle",      color: "#f97316", label: "Revoke Check-out" },
+  "revoke-submit":  { icon: "rotate-ccw",    color: "#dc2626", label: "Revoke Inventory" },
+  entry:            { icon: "arrow-right",   color: "#f59e0b", label: "Entry" },
+  inventory:        { icon: "package",       color: "#0ea5e9", label: "Inventory" },
+  "mess-card":      { icon: "credit-card",   color: "#f97316", label: "Mess Card" },
+  custom:           { icon: "edit-2",        color: "#06b6d4", label: "Custom" },
 };
 
 function formatTime(ts: string): string {
@@ -414,7 +417,7 @@ export default function ActivityLogsScreen() {
       <View style={[styles.filterRow, { borderBottomColor: theme.border }]}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={{ flexDirection: "row", gap: 8 }}>
-            {["all", "active", "inactive", "login", "logout", "checkin", "checkout", "inventory", "mess-card", "entry"].map(f => (
+            {["all", "active", "inactive", "login", "logout", "checkin", "checkout", "revoke-checkin", "revoke-checkout", "revoke-submit", "inventory", "mess-card", "entry"].map(f => (
               <Pressable
                 key={f}
                 onPress={() => { setFilter(f); Haptics.selectionAsync(); }}
