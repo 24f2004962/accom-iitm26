@@ -58,6 +58,7 @@ interface CheckinState {
     id: string;
     checkInTime: string;
     checkOutTime: string | null;
+    volunteerName?: string | null;
   } | null;
   inventory: {
     mattress: boolean;
@@ -163,6 +164,7 @@ function AttendanceModal({
       attendanceStatus: nextCheckin && !nextCheckin.checkOutTime ? "entered" : nextCheckin?.checkOutTime ? "exited" : "not_entered",
       checkInTime: nextCheckin?.checkInTime ?? null,
       checkOutTime: nextCheckin?.checkOutTime ?? null,
+      checkedInByName: nextCheckin?.volunteerName ?? (nextCheckin ? student.checkedInByName : null),
       inventory: next?.inventory ?? undefined,
     });
   }
@@ -365,6 +367,14 @@ function AttendanceModal({
                     <Text style={[styles.statusTime, { color: theme.textSecondary }]}>Out: {formatTime(checkin.checkOutTime)}</Text>
                   )}
                 </View>
+                {!!(checkin?.volunteerName || student.checkedInByName) && (
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: theme.border }}>
+                    <Feather name="user-check" size={12} color="#8b5cf6" />
+                    <Text style={{ fontSize: 12, fontFamily: "Inter_400Regular", color: "#8b5cf6" }}>
+                      Checked in by {checkin?.volunteerName || student.checkedInByName}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* STEP 1: Check In / Revoke */}
@@ -478,6 +488,52 @@ function AttendanceModal({
                 <View style={[styles.hintBox, { backgroundColor: "#22c55e10", borderColor: "#22c55e30" }]}>
                   <Feather name="check-circle" size={13} color="#22c55e" />
                   <Text style={[styles.hintText, { color: "#22c55e" }]}>All given items returned. Ready for checkout.</Text>
+                </View>
+              )}
+
+              {/* REVOKE SUBMISSIONS — visible card when any item is submitted */}
+              {hasAttendanceSession && (inv.mattressSubmitted || inv.bedsheetSubmitted || inv.pillowSubmitted) && (
+                <View style={[styles.revokeCard, { backgroundColor: "#fef2f208", borderColor: "#ef444430" }]}>
+                  <View style={styles.revokeHeader}>
+                    <View style={styles.revokeIconCircle}>
+                      <Feather name="rotate-ccw" size={14} color="#ef4444" />
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.revokeCardTitle]}>Undo Submission</Text>
+                      <Text style={[styles.revokeCardHint, { color: theme.textTertiary }]}>Student didn't return an item? Tap to undo.</Text>
+                    </View>
+                  </View>
+                  <View style={styles.revokeBtnGroup}>
+                    {(["mattress", "bedsheet", "pillow"] as const).map(item => {
+                      const submitKey = `${item}Submitted` as keyof typeof inv;
+                      if (!inv[submitKey]) return null;
+                      return (
+                        <Pressable
+                          key={`revoke-visible-${item}`}
+                          onPress={() => revokeItem(item)}
+                          disabled={!!actionLoading}
+                          style={({ pressed }) => [styles.revokeBtnRow, {
+                            backgroundColor: pressed ? "#fef2f2" : theme.surface,
+                            borderColor: "#ef444430",
+                            opacity: actionLoading ? 0.6 : 1,
+                          }]}
+                        >
+                          {actionLoading === `revoke-${item}` ? (
+                            <ActivityIndicator color="#ef4444" size="small" style={{ width: 32 }} />
+                          ) : (
+                            <View style={[styles.revokeBtnIcon, { backgroundColor: "#fef2f2" }]}>
+                              <Feather name="rotate-ccw" size={14} color="#ef4444" />
+                            </View>
+                          )}
+                          <View style={{ flex: 1 }}>
+                            <Text style={styles.revokeBtnTitle}>Undo {item.charAt(0).toUpperCase() + item.slice(1)}</Text>
+                            <Text style={[styles.revokeBtnSub, { color: theme.textTertiary }]}>Mark as not yet returned</Text>
+                          </View>
+                          <Feather name="chevron-right" size={14} color="#ef444460" />
+                        </Pressable>
+                      );
+                    })}
+                  </View>
                 </View>
               )}
 
@@ -725,6 +781,7 @@ export default function AttendanceTab() {
   const [activating, setActivating] = useState(false);
   const [deactivating, setDeactivating] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
   const hasSearchQuery = searchQuery.trim().length > 0;
   const requiresShift = user?.role === "volunteer" || user?.role === "admin" || user?.role === "coordinator";
 
@@ -770,7 +827,10 @@ export default function AttendanceTab() {
       setHasMore(list.length === PAGE_SIZE);
       if (!reset) setPage(p => p + 1);
       else setPage(1);
-    } catch { }
+      setIsOffline(false);
+    } catch {
+      setIsOffline(true);
+    }
     if (!silent) setLoading(false);
   }, [isStudent, request, searchQuery, searchNonce, page, hasMore, canWork, qc]);
 
@@ -879,6 +939,18 @@ export default function AttendanceTab() {
           </Text>
         )}
       </View>
+
+      {isOffline && (
+        <View style={{ marginHorizontal: 14, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: "#f59e0b18", borderWidth: 1, borderColor: "#f59e0b40", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 8 }}>
+          <Feather name="wifi-off" size={14} color="#b45309" />
+          <Text style={{ flex: 1, color: "#b45309", fontSize: 12, fontFamily: "Inter_500Medium" }}>
+            No connection — showing cached data. Actions may not save.
+          </Text>
+          <Pressable onPress={() => setIsOffline(false)} hitSlop={8}>
+            <Feather name="x" size={14} color="#b45309" />
+          </Pressable>
+        </View>
+      )}
 
       <FlatList
         data={allStudents}

@@ -357,9 +357,17 @@ router.get("/:studentId/today", requireVolunteer, async (req: AuthRequest, res) 
   const [inv] = await db.select().from(studentInventoryTable)
     .where(eq(studentInventoryTable.studentId, studentId));
 
+  let volunteerName: string | null = null;
+  if (checkin?.volunteerId) {
+    const [vol] = await db.select({ name: usersTable.name })
+      .from(usersTable).where(eq(usersTable.id, checkin.volunteerId));
+    volunteerName = vol?.name ?? null;
+  }
+
   res.json({
     checkin: checkin ? {
       ...checkin,
+      volunteerName,
       checkInTime: checkin.checkInTime?.toISOString() || null,
       checkOutTime: checkin.checkOutTime?.toISOString() || null,
       createdAt: checkin.createdAt.toISOString(),

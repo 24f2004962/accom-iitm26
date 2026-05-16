@@ -23,8 +23,9 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 8000,
-      gcTime: 10 * 60 * 1000,
+      staleTime: 30000,
+      gcTime: 30 * 60 * 1000,
+      networkMode: "offlineFirst",
       refetchOnReconnect: true,
       refetchOnWindowFocus: true,
       refetchOnMount: true,

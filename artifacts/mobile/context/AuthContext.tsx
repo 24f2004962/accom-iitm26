@@ -243,17 +243,41 @@ export function useApiRequest() {
   const base = resolvedBase();
 
   return useCallback(async (path: string, options: RequestInit = {}) => {
-    const res = await safeJsonFetch(`${base}${path}`, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        ...(options.headers || {}),
-      },
-    }, 15000);
+    const method = (options.method || "GET").toUpperCase();
+    const isGet = method === "GET";
+    const cacheKey = `api_cache:${path}`;
 
-    const data = await parseJson(res);
-    if (!res.ok) throw new Error(data?.message || `Request failed (${res.status})`);
-    return data;
+    try {
+      const res = await safeJsonFetch(`${base}${path}`, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...(options.headers || {}),
+        },
+      }, 15000);
+
+      const data = await parseJson(res);
+      if (!res.ok) throw new Error(data?.message || `Request failed (${res.status})`);
+
+      // Cache successful GET responses in AsyncStorage for offline fallback
+      if (isGet && data != null) {
+        AsyncStorage.setItem(cacheKey, JSON.stringify({ data, ts: Date.now() })).catch(() => {});
+      }
+
+      return data;
+    } catch (err: any) {
+      // For GET requests on network failure, fall back to cached response
+      if (isGet) {
+        try {
+          const raw = await AsyncStorage.getItem(cacheKey);
+          if (raw) {
+            const { data } = JSON.parse(raw);
+            return data;
+          }
+        } catch {}
+      }
+      throw err;
+    }
   }, [token, base]);
 }
