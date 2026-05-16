@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { PageHeader, Card, Table, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
 import { History as HistoryIcon, RefreshCw, Users, Package } from "lucide-react";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 
 function fmt(ts?: string | null) {
   if (!ts) return "—";
