@@ -257,8 +257,8 @@ export default function Staff() {
             <label className="text-xs font-semibold text-slate-400 mb-1.5 block">Role</label>
             <Select value={createForm.role} onChange={(v) => setCreateForm((f) => ({ ...f, role: v }))}>
               <option value="volunteer">Volunteer (1 hostel)</option>
-              <option value="coordinator">Coordinator (up to 2 hostels)</option>
-              <option value="admin">Admin (up to 3 hostels)</option>
+              <option value="coordinator">Coordinator (up to 10 hostels)</option>
+              <option value="admin">Admin (up to 20 hostels)</option>
               <option value="superadmin">Super Admin (all hostels)</option>
             </Select>
           </div>
@@ -294,8 +294,8 @@ export default function Staff() {
                 if (assignHostelIds.length > max) setAssignHostelIds(assignHostelIds.slice(0, max));
               }}>
                 <option value="volunteer">Volunteer — 1 hostel max</option>
-                <option value="coordinator">Coordinator — 2 hostels max</option>
-                <option value="admin">Admin — 3 hostels max</option>
+                <option value="coordinator">Coordinator — up to 10 hostels</option>
+                <option value="admin">Admin — up to 20 hostels</option>
                 <option value="superadmin">Super Admin — all hostels</option>
               </Select>
             </div>

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback, memo, useRef, useEffect } from "react";
 import {
-  View, Text, FlatList, StyleSheet, Pressable, TextInput,
+  View, Text, FlatList, StyleSheet, Pressable,
   Modal, ScrollView, RefreshControl, Platform, useColorScheme,
   ActivityIndicator,
 } from "react-native";
@@ -11,7 +11,6 @@ import * as Haptics from "expo-haptics";
 import Colors from "@/constants/colors";
 import { useAuth, useApiRequest } from "@/context/AuthContext";
 import { CardSkeleton } from "@/components/ui/LoadingSkeleton";
-import { useDebounce } from "@/hooks/useDebounce";
 import { AnimatedCard } from "@/components/ui/AnimatedCard";
 
 const PAGE_SIZE = 60;
@@ -293,9 +292,9 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
   const assignedHostels = useMemo(() => parseAssignedHostels(user), [user?.hostelId, user?.assignedHostelIds]);
   const showHostelFilter = assignedHostels.length > 1 || isSuperAdmin;
 
-  const [selectedHostel, setSelectedHostel] = useState(ALL_HOSTELS);
-  const [search, setSearch] = useState("");
-  const debouncedSearch = useDebounce(search, 350);
+  const [selectedHostel, setSelectedHostel] = useState(() =>
+    isSuperAdmin ? ALL_HOSTELS : (assignedHostels[0] ?? ALL_HOSTELS)
+  );
   const [students, setStudents] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [hasMore, setHasMore] = useState(true);
@@ -308,15 +307,14 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
 
   const doFetch = useCallback(async (offset: number) => {
     const params = new URLSearchParams({ limit: String(PAGE_SIZE), offset: String(offset) });
-    if (debouncedSearch.trim()) params.set("search", debouncedSearch.trim());
     if (selectedHostel !== ALL_HOSTELS) params.set("hostelId", selectedHostel);
     const res = await request(`/students?${params}`);
     const list = Array.isArray(res) ? res : (res.students || []);
     const tot = res.total ?? list.length;
     return { list, total: Number(tot) };
-  }, [request, debouncedSearch, selectedHostel]);
+  }, [request, selectedHostel]);
 
-  const hasActiveQuery = debouncedSearch.trim().length > 0 || selectedHostel !== ALL_HOSTELS;
+  const hasActiveQuery = isSuperAdmin || selectedHostel !== ALL_HOSTELS;
 
   const load = useCallback(async (reset = false) => {
     if (!canWork) { setHasMore(false); return; }
@@ -352,8 +350,16 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
     setLoadingMore(false);
   }, [doFetch, canWork, hasActiveQuery, qc]);
 
-  // Reload when shift becomes active, or filter/search changes
-  useEffect(() => { load(true); }, [debouncedSearch, selectedHostel, canWork]);
+  // Auto-select primary hostel when assignedHostels becomes available (safety net for async user load)
+  useEffect(() => {
+    if (!isSuperAdmin && assignedHostels.length > 0 && selectedHostel === ALL_HOSTELS) {
+      setSelectedHostel(assignedHostels[0]);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignedHostels.join(",")]);
+
+  // Reload when shift becomes active, or hostel filter changes
+  useEffect(() => { load(true); }, [selectedHostel, canWork]);
 
   // Auto-refresh every 30s only when actively searching
   useEffect(() => {
@@ -388,26 +394,6 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
             <View style={[stf.countBadge, { backgroundColor: theme.tint + "18", borderColor: theme.tint + "35" }]}>
               <Text style={[stf.countText, { color: theme.tint }]}>{total.toLocaleString()}</Text>
             </View>
-          )}
-        </View>
-
-        {/* Search */}
-        <View style={[stf.searchBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
-          <Feather name="search" size={16} color={theme.textSecondary} />
-          <TextInput
-            style={[stf.searchInput, { color: theme.text }]}
-            placeholder="Search by name, roll, room, mess…"
-            placeholderTextColor={theme.textTertiary}
-            value={search}
-            onChangeText={setSearch}
-            returnKeyType="search"
-            clearButtonMode="while-editing"
-            autoCorrect={false}
-          />
-          {search.length > 0 && (
-            <Pressable onPress={() => setSearch("")} hitSlop={8}>
-              <Feather name="x-circle" size={16} color={theme.textSecondary} />
-            </Pressable>
           )}
         </View>
 
@@ -462,10 +448,10 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
           ListEmptyComponent={
             !hasActiveQuery ? (
               <View style={stf.empty}>
-                <Feather name="search" size={44} color={theme.textTertiary} />
-                <Text style={[stf.emptyTitle, { color: theme.text }]}>Search Students</Text>
+                <Feather name="home" size={44} color={theme.textTertiary} />
+                <Text style={[stf.emptyTitle, { color: theme.text }]}>Select a Hostel</Text>
                 <Text style={[stf.emptyHint, { color: theme.textSecondary }]}>
-                  Enter a name, roll number, or room to find students
+                  Pick a hostel above to view its students
                 </Text>
               </View>
             ) : (
@@ -473,7 +459,7 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
                 <Feather name="users" size={44} color={theme.textTertiary} />
                 <Text style={[stf.emptyTitle, { color: theme.text }]}>No students found</Text>
                 <Text style={[stf.emptyHint, { color: theme.textSecondary }]}>
-                  Try a different name, roll number, or room
+                  No students are assigned to this hostel yet
                 </Text>
               </View>
             )
