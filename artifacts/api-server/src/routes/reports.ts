@@ -205,9 +205,9 @@ router.delete("/admin-users/:id", requireSuperAdmin, async (req: AuthRequest, re
   res.json({ success: true });
 });
 
-// PATCH /api/admin/assign-hostel/:id — assign hostel(s) to a staff member
+// PATCH /api/admin/assign-hostel/:id — assign hostel(s) to a staff member with role-based limits
 router.patch("/assign-hostel/:id", requireSuperAdmin, async (req: AuthRequest, res) => {
-  const { hostelId, assignedHostelIds, area } = req.body;
+  const { hostelId, assignedHostelIds, area, role } = req.body;
   const [before] = await db.select({
     id: usersTable.id,
     name: usersTable.name,
@@ -221,19 +221,41 @@ router.patch("/assign-hostel/:id", requireSuperAdmin, async (req: AuthRequest, r
     return;
   }
 
-  const updates: Record<string, any> = {};
+  const effectiveRole = role || before.role;
 
-  if (hostelId !== undefined) updates.hostelId = hostelId || null;
-  if (assignedHostelIds !== undefined) {
-    updates.assignedHostelIds = JSON.stringify(Array.isArray(assignedHostelIds) ? assignedHostelIds : []);
-  }
+  // Role-based hostel limits: volunteer=1, coordinator=2, admin=3
+  const maxHostels = effectiveRole === "volunteer" ? 1 : effectiveRole === "coordinator" ? 2 : effectiveRole === "admin" ? 3 : 999;
+
+  const updates: Record<string, any> = {};
+  if (role !== undefined) updates.role = role;
   if (area !== undefined) updates.area = area || null;
 
-  // Volunteers are single-hostel operationally; keep history trail in assignedHostelIds list.
-  if (before.role === "volunteer" && hostelId !== undefined) {
-    const prev = JSON.parse(before.assignedHostelIds || "[]") as string[];
-    const merged = Array.from(new Set([...prev, before.hostelId || "", hostelId || ""].filter(Boolean)));
-    updates.assignedHostelIds = JSON.stringify(merged);
+  if (effectiveRole === "volunteer") {
+    // Volunteer: single hostel only
+    const singleId = (Array.isArray(assignedHostelIds) ? assignedHostelIds[0] : hostelId) || null;
+    updates.hostelId = singleId;
+    updates.assignedHostelIds = JSON.stringify(singleId ? [singleId] : []);
+  } else if (Array.isArray(assignedHostelIds)) {
+    const capped = assignedHostelIds.slice(0, maxHostels);
+    if (capped.length > maxHostels) {
+      res.status(400).json({ message: `${effectiveRole} can be assigned at most ${maxHostels} hostel(s)` });
+      return;
+    }
+    updates.hostelId = capped[0] || null;
+    updates.assignedHostelIds = JSON.stringify(capped);
+  } else if (hostelId !== undefined) {
+    updates.hostelId = hostelId || null;
+    if (!hostelId) {
+      updates.assignedHostelIds = JSON.stringify([]);
+    } else {
+      const prev = JSON.parse(before.assignedHostelIds || "[]") as string[];
+      if (effectiveRole === "volunteer") {
+        updates.assignedHostelIds = JSON.stringify([hostelId]);
+      } else {
+        const merged = Array.from(new Set([hostelId, ...prev].filter(Boolean))).slice(0, maxHostels);
+        updates.assignedHostelIds = JSON.stringify(merged);
+      }
+    }
   }
 
   const [user] = await db.update(usersTable).set(updates).where(eq(usersTable.id, req.params.id)).returning();
@@ -246,15 +268,8 @@ router.patch("/assign-hostel/:id", requireSuperAdmin, async (req: AuthRequest, r
     type: "assignment",
     note: JSON.stringify({
       changedBy: req.userId,
-      from: {
-        hostelId: before.hostelId,
-        assignedHostelIds: JSON.parse(before.assignedHostelIds || "[]"),
-      },
-      to: {
-        hostelId: user.hostelId,
-        assignedHostelIds: JSON.parse(user.assignedHostelIds || "[]"),
-        area: user.area,
-      },
+      from: { role: before.role, hostelId: before.hostelId, assignedHostelIds: JSON.parse(before.assignedHostelIds || "[]") },
+      to: { role: user.role, hostelId: user.hostelId, assignedHostelIds: JSON.parse(user.assignedHostelIds || "[]"), area: user.area },
       changedAt: new Date().toISOString(),
     }),
   });
