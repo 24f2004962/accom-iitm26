@@ -1,12 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { GraduationCap, Eye, EyeOff, AlertCircle, Zap } from "lucide-react";
-
-const DEMO_ACCOUNTS = [
-  { label: "Super Admin", email: "superadmin@iitm.ac.in", color: "text-red-400 border-red-500/30 bg-red-500/10 hover:bg-red-500/20" },
-  { label: "Admin", email: "admin@iitm.ac.in", color: "text-orange-400 border-orange-500/30 bg-orange-500/10 hover:bg-orange-500/20" },
-  { label: "Volunteer", email: "volunteer@iitm.ac.in", color: "text-blue-400 border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/20" },
-];
+import { GraduationCap, Eye, EyeOff, AlertCircle } from "lucide-react";
 
 export default function Login() {
   const { login } = useAuth();
@@ -29,20 +23,6 @@ export default function Login() {
     }
   }
 
-  async function loginAs(demoEmail: string) {
-    setEmail(demoEmail);
-    setPassword("123456");
-    setError("");
-    setLoading(true);
-    try {
-      await login(demoEmail, "123456");
-    } catch (err: any) {
-      setError(err.message || "Login failed");
-    } finally {
-      setLoading(false);
-    }
-  }
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#0f0f11] p-4">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
@@ -59,32 +39,7 @@ export default function Login() {
           <p className="text-slate-500 text-sm mt-1">Admin Portal · IIT Madras BS</p>
         </div>
 
-        <div className="bg-[#161620] border border-white/8 rounded-2xl p-6 shadow-2xl space-y-5">
-          <div>
-            <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-              <Zap size={10} className="text-yellow-500" /> Quick Login (Demo)
-            </p>
-            <div className="flex gap-2">
-              {DEMO_ACCOUNTS.map((a) => (
-                <button
-                  key={a.email}
-                  type="button"
-                  disabled={loading}
-                  onClick={() => loginAs(a.email)}
-                  className={`flex-1 text-[11px] font-semibold py-1.5 px-2 rounded-lg border transition-all ${a.color}`}
-                >
-                  {a.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-px bg-white/8" />
-            <span className="text-[10px] text-slate-600">or sign in manually</span>
-            <div className="flex-1 h-px bg-white/8" />
-          </div>
-
+        <div className="bg-[#161620] border border-white/8 rounded-2xl p-6 shadow-2xl">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 block">
@@ -143,8 +98,7 @@ export default function Login() {
         </div>
 
         <p className="text-center text-[10px] text-slate-700 mt-5">
-          IIT Madras BS · Hostel Management System<br />
-          <span className="text-slate-600">superadmin: <span className="text-slate-500">qwerty</span> · others: <span className="text-slate-500">123456</span></span>
+          IIT Madras BS · Hostel Management System
         </p>
       </div>
     </div>

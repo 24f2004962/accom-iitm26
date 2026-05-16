@@ -2,10 +2,6 @@ import {
   db,
   usersTable,
   hostelsTable,
-  announcementsTable,
-  notificationsTable,
-  emergencyContactsTable,
-  studentInventoryTable,
 } from "@workspace/db";
 import { eq, count } from "drizzle-orm";
 import crypto from "crypto";
@@ -22,226 +18,39 @@ const REAL_HOSTELS = [
 
 export async function autoSeed() {
   try {
-    // --- Hostels ---
+    // --- Hostels: create real hostels if none exist ---
     const existingHostels = await db.select().from(hostelsTable);
-    let hostelIds: string[] = existingHostels.map((h: { id: string }) => h.id);
-
     if (existingHostels.length === 0) {
       for (const name of REAL_HOSTELS) {
-        await db.insert(hostelsTable).values({ id: name, name, location: "IITM Campus" }).onConflictDoNothing();
-        hostelIds.push(name);
+        await db.insert(hostelsTable)
+          .values({ id: name, name, location: "IITM Campus" })
+          .onConflictDoNothing();
       }
       console.log("[seed] Real hostels created");
     }
 
-    const [hostelId1, hostelId2] = [hostelIds[0] ?? "Bhadra", hostelIds[1] ?? "Brahmaputra"];
-    const pw = "123456";
+    // --- Superadmin: ensure at least one superadmin exists ---
+    const [{ count: saCount }] = await db
+      .select({ count: count() })
+      .from(usersTable)
+      .where(eq(usersTable.role, "superadmin"));
 
-    // --- Demo Student Account ---
-    const studentPwHash = await hashPassword(pw);
-    await db.insert(usersTable).values({
-      id: generateId(),
-      name: "Arjun Kumar",
-      email: "student@iitm.ac.in",
-      passwordHash: studentPwHash,
-      role: "student",
-      rollNumber: "21F3001234",
-      hostelId: hostelId1,
-      roomNumber: "A-104",
-      assignedMess: "Neelkesh - North - Veg",
-      area: "N",
-      attendanceStatus: "entered",
-      isActive: true,
-    }).onConflictDoUpdate({
-      target: usersTable.email,
-      set: { passwordHash: studentPwHash, name: "Arjun Kumar", hostelId: hostelId1, roomNumber: "A-104" },
-    });
-
-    // --- Staff Demo Accounts ---
-    const staffAccounts = [
-      {
-        email: "volunteer@iitm.ac.in",
-        name: "Priya Volunteer",
-        role: "volunteer",
-        hostelId: hostelId1,
-        area: "Operations",
-        assignedHostelIds: JSON.stringify([hostelId1]),
-        phone: "+91 9876543000",
-        password: pw,
-      },
-      {
-        email: "volunteer2@iitm.ac.in",
-        name: "Suresh Volunteer",
-        role: "volunteer",
-        hostelId: hostelId2,
-        area: "Operations",
-        assignedHostelIds: JSON.stringify([hostelId2]),
-        phone: "+91 9876543005",
-        password: pw,
-      },
-      {
-        email: "coordinator@iitm.ac.in",
-        name: "Ravi Coordinator",
-        role: "coordinator",
-        hostelId: hostelId1,
-        area: "Administration",
-        assignedHostelIds: JSON.stringify([hostelId1, hostelId2]),
-        phone: "+91 9876543001",
-        password: pw,
-      },
-      {
-        email: "admin@iitm.ac.in",
-        name: "Admin IITM",
-        role: "admin",
-        hostelId: null,
-        area: null,
-        assignedHostelIds: JSON.stringify(hostelIds),
-        phone: "+91 9876543002",
-        password: pw,
-      },
-      {
-        email: "superadmin@iitm.ac.in",
-        name: "Super Admin",
-        role: "superadmin",
-        hostelId: null,
-        area: null,
-        assignedHostelIds: JSON.stringify([]),
-        phone: "+91 9876543003",
-        password: "qwerty",
-      },
-    ];
-
-    for (const u of staffAccounts) {
-      const passwordHash = await hashPassword(u.password);
+    if (Number(saCount) === 0) {
+      const passwordHash = await hashPassword("qwerty");
       await db.insert(usersTable).values({
         id: generateId(),
-        name: u.name,
-        email: u.email,
+        name: "Super Admin",
+        email: "superadmin@iitm.ac.in",
         passwordHash,
-        role: u.role,
-        hostelId: u.hostelId ?? undefined,
-        area: u.area ?? undefined,
-        assignedHostelIds: u.assignedHostelIds,
-        phone: u.phone,
+        role: "superadmin",
         isActive: true,
-      }).onConflictDoUpdate({
-        target: usersTable.email,
-        set: {
-          passwordHash,
-          name: u.name,
-          role: u.role,
-          hostelId: u.hostelId ?? null,
-          area: u.area ?? null,
-          assignedHostelIds: u.assignedHostelIds,
-        },
-      });
+        assignedHostelIds: "[]",
+      }).onConflictDoNothing();
+      console.log("[seed] Default superadmin created (superadmin@iitm.ac.in / qwerty)");
     }
 
-    // --- Demo Students (seed 60 if none exist) ---
-    const [{ count: studentCount }] = await db.select({ count: count() }).from(usersTable).where(eq(usersTable.role, "student"));
-    console.log(`[seed] Students in DB: ${studentCount} across ${hostelIds.length} hostels`);
-
-    if (Number(studentCount) <= 1 && hostelIds.length > 0) {
-      const MESS_OPTIONS = [
-        "Neelkesh - North - Veg", "Neelkesh - North - Non-Veg",
-        "R Gouras - North - Veg", "R Gouras - North - Non-Veg",
-        "Rassense (CRCL) - South - Veg", "Rassense (CRCL) - South - Non-Veg",
-        "Firstman - North - Veg", "Firstman - North - Non-Veg",
-      ];
-      const AREAS = ["N", "S", "E", "W"];
-      const STATUS_OPT: Array<"entered" | "exited"> = ["entered", "exited"];
-      const DEMO_STUDENTS = [
-        "Aarav Sharma","Aditi Singh","Aditya Kumar","Akash Patel","Ananya Gupta",
-        "Anjali Verma","Arjun Nair","Bhavya Reddy","Chirag Mehta","Deepika Joshi",
-        "Divya Iyer","Gaurav Mishra","Harsha Vardhan","Ishaan Bose","Jaya Krishnan",
-        "Kabir Das","Kavya Pillai","Lakshmi Narayanan","Manish Tiwari","Meera Sahu",
-        "Mohit Yadav","Nandini Roy","Nikhil Agarwal","Nisha Choudhary","Om Prakash",
-        "Pooja Tripathi","Priya Pandey","Rahul Bansal","Rajesh Kulkarni","Rekha Nambiar",
-        "Rohit Chandra","Sakshi Goel","Sanjay Dubey","Shreya Kapoor","Shubham Jain",
-        "Soumya Bhatt","Srikanth Rao","Suresh Malhotra","Tanvi Desai","Uday Menon",
-        "Vaibhav Shah","Vijaya Laxmi","Vikram Sengupta","Vinay Hegde","Yash Awasthi",
-        "Zara Siddiqui","Arnav Bhatia","Diya Chauhan","Harsh Bajaj","Ishita Khanna",
-        "Karan Rathi","Lavanya Subramanian","Mayur Patil","Neel Joshi","Ojas Thakur",
-        "Payal Ahuja","Radhika Venkatesh","Samir Oberoi","Tanya Srivastava","Urvashi More",
-      ];
-      const YEAR_PFX = ["21F","22F","23F","24F","25F"];
-      let created = 0;
-      for (let i = 0; i < DEMO_STUDENTS.length; i++) {
-        const name = DEMO_STUDENTS[i];
-        const hostelId = hostelIds[i % hostelIds.length];
-        const roll = `${YEAR_PFX[i % 5]}${String(1000000 + i * 97).slice(0,7)}`;
-        const room = String(100 + Math.floor(i / 4) * 4 + (i % 4) + 1);
-        const mess = MESS_OPTIONS[i % MESS_OPTIONS.length];
-        const area = AREAS[i % AREAS.length];
-        const attendance = STATUS_OPT[i % 3 === 0 ? 0 : 1];
-        const email = `student${i + 1}@iitm.ac.in`;
-        await db.insert(usersTable).values({
-          id: generateId(), name, email,
-          passwordHash: await hashPassword(pw),
-          role: "student",
-          rollNumber: roll,
-          hostelId,
-          roomNumber: room,
-          assignedMess: mess,
-          area,
-          attendanceStatus: attendance,
-          isActive: true,
-        }).onConflictDoNothing();
-        created++;
-      }
-      console.log(`[seed] Created ${created} demo students`);
-    }
-
-    // --- Emergency Contacts ---
-    const [{ count: contactCount }] = await db.select({ count: count() }).from(emergencyContactsTable);
-    if (Number(contactCount) === 0) {
-      await db.insert(emergencyContactsTable).values([
-        { id: generateId(), hostelId: "", name: "Health Center", role: "Medical", phone: "044-22578430", isAvailable24x7: "true" },
-        { id: generateId(), hostelId: "", name: "Dean of Students Office", role: "Administration", phone: "044-22578200", isAvailable24x7: "false" },
-        { id: generateId(), hostelId: "", name: "Campus Police", role: "Security", phone: "044-22578100", isAvailable24x7: "true" },
-        { id: generateId(), hostelId: "", name: "Security Control Room", role: "Security", phone: "044-22578500", isAvailable24x7: "true" },
-        { id: generateId(), hostelId: "", name: "Ambulance (Campus)", role: "Medical", phone: "044-22578911", isAvailable24x7: "true" },
-      ]);
-      console.log("[seed] Emergency contacts created");
-    }
-
-    // --- Announcements ---
-    const [{ count: annCount }] = await db.select({ count: count() }).from(announcementsTable);
-    if (Number(annCount) === 0) {
-      const [admin] = await db.select().from(usersTable).where(eq(usersTable.email, "admin@iitm.ac.in"));
-      if (admin) {
-        await db.insert(announcementsTable).values([
-          { id: generateId(), title: "Welcome to CampusOps!", content: "Your centralized portal for hostel management, attendance tracking, inventory, and campus communications.", category: "general" as const, createdBy: admin.id },
-          { id: generateId(), title: "Mess Timings", content: "Breakfast 7:00–9:00 AM | Lunch 12:00–2:00 PM | Dinner 7:00–9:30 PM", category: "hostel" as const, createdBy: admin.id },
-          { id: generateId(), title: "Hostel Inventory Drive", content: "All students must submit mattress, bedsheet, and pillow details. Contact your hostel volunteer.", category: "hostel" as const, createdBy: admin.id },
-        ]);
-        console.log("[seed] Announcements created");
-      }
-    }
-
-    // --- Student Inventory Seed ---
-    const [{ count: invCount }] = await db.select({ count: count() }).from(studentInventoryTable);
-    if (Number(invCount) < 10) {
-      const students = await db.select({ id: usersTable.id, hostelId: usersTable.hostelId })
-        .from(usersTable).where(eq(usersTable.role, "student"));
-      const existingInv = await db.select({ studentId: studentInventoryTable.studentId }).from(studentInventoryTable);
-      const invSet = new Set(existingInv.map((i: { studentId: string }) => i.studentId));
-
-      let created = 0;
-      for (const s of students.slice(0, 40)) {
-        if (invSet.has(s.id)) continue;
-        await db.insert(studentInventoryTable).values({
-          id: generateId(), studentId: s.id, hostelId: s.hostelId,
-          mattress: Math.random() > 0.2, bedsheet: Math.random() > 0.25, pillow: Math.random() > 0.35,
-          updatedBy: "seed",
-        });
-        created++;
-      }
-      if (created > 0) console.log(`[seed] Created ${created} inventory records`);
-    }
-
-    console.log("[seed] Auto-seed complete ✓");
+    console.log("[seed] Setup complete ✓");
   } catch (err) {
-    console.error("[seed] Fatal seed error:", err);
+    console.error("[seed] Error:", err);
   }
 }
