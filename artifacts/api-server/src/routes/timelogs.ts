@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, timeLogsTable, usersTable } from "@workspace/db";
 import { eq, desc } from "drizzle-orm";
-import { requireAuth, requireAdmin, generateId, AuthRequest, COORDINATOR_ROLES } from "../lib/auth.js";
+import { requireAuth, requireAdmin, requireVolunteer, generateId, AuthRequest, COORDINATOR_ROLES } from "../lib/auth.js";
 
 const router = Router();
 
@@ -49,8 +49,8 @@ router.get("/", requireAuth, async (req: AuthRequest, res) => {
   res.json(logs.map(l => ({ ...l, createdAt: l.createdAt.toISOString() })));
 });
 
-// GET /api/timelogs/today — today's activity logs with JOIN
-router.get("/today", requireAdmin, async (_req, res) => {
+// GET /api/timelogs/today — today's activity logs with JOIN (volunteer+)
+router.get("/today", requireVolunteer, async (_req: AuthRequest, res) => {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 

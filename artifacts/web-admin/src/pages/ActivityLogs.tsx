@@ -22,9 +22,14 @@ const TYPE_MAP: Record<string, [string, "purple" | "green" | "blue" | "yellow" |
 };
 
 const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+const SHORT_HEX_RE = /\b[0-9a-f]{16,32}\b/gi;
 
-function stripUuids(text: string): string {
-  return text.replace(UUID_RE, "").replace(/\s{2,}/g, " ").trim();
+function stripIds(text: string): string {
+  return text
+    .replace(UUID_RE, "")
+    .replace(SHORT_HEX_RE, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -63,25 +68,31 @@ export function formatNote(note: string | null | undefined, type: string): strin
         const fromHostels: string[] = obj.from?.assignedHostelIds || [];
         const toHostels: string[] = obj.to?.assignedHostelIds || [];
         if (JSON.stringify(fromHostels) !== JSON.stringify(toHostels)) {
-          const from = fromHostels.length ? fromHostels.join(", ") : "none";
-          const to = toHostels.length ? toHostels.join(", ") : "none";
-          sentences.push(`Hostel assignment changed from ${from} to ${to}.`);
+          const fromCount = fromHostels.length;
+          const toCount = toHostels.length;
+          if (toCount > fromCount) {
+            sentences.push(`Hostel assignment expanded to ${toCount} hostel${toCount !== 1 ? "s" : ""}.`);
+          } else if (toCount < fromCount) {
+            sentences.push(`Hostel assignment reduced to ${toCount} hostel${toCount !== 1 ? "s" : ""}.`);
+          } else {
+            sentences.push(`Hostel assignment updated.`);
+          }
         }
         if (obj.to?.area) sentences.push(`Area set to ${obj.to.area}.`);
         return sentences.length > 0 ? sentences.join(" ") : "Staff assignment was updated.";
       }
-      // Any other JSON: fall through to raw note (strip UUIDs)
-      return stripUuids(note);
+      // Any other JSON object — return human-readable fallback
+      return TYPE_LABELS[type] || type || "—";
     }
   } catch {
     // Not JSON — continue below
   }
 
-  // Plain text notes: strip raw UUIDs and clean up
-  const cleaned = stripUuids(note);
+  // Plain text notes: strip raw IDs and clean up
+  const cleaned = stripIds(note);
 
   // Humanise common backend-generated patterns (old format used raw IDs)
-  const patterns: [RegExp, string][] = [
+  const patterns: [RegExp, string | ((m: RegExpMatchArray) => string)][] = [
     [/^Checked in\b/i, "Checked in"],
     [/^Checked out\b/i, "Checked out"],
     [/^Revoked check-?in\b/i, "Revoked check-in for"],
@@ -99,52 +110,14 @@ export function formatNote(note: string | null | undefined, type: string): strin
   for (const [pattern, replacement] of patterns) {
     if (pattern.test(note)) {
       if (typeof replacement === "function") {
-        const m = note.match(pattern as RegExp);
-        return m ? (replacement as any)(m) + (cleaned.replace(pattern.source ? "" : "", "").trim() ? " — " + cleaned : "") : cleaned;
+        const m = note.match(pattern);
+        return m ? replacement(m) : cleaned;
       }
-      // If original note had a UUID (old format), cleaned is shorter — show cleaned version
-      // If no UUID (new format with student name), cleaned === note
       return cleaned || (replacement as string);
     }
   }
 
   return cleaned || TYPE_LABELS[type] || type || "—";
-}
-
-function NoteCell({ note, type }: { note: string | null | undefined; type: string }) {
-  const [expanded, setExpanded] = useState(false);
-  const formatted = formatNote(note, type);
-  const isLong = formatted.length > 60;
-
-  if (!isLong) {
-    return <span className="text-sm text-slate-400">{formatted}</span>;
-  }
-
-  return (
-    <div>
-      {expanded ? (
-        <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
-          {formatted}
-          <button
-            onClick={() => setExpanded(false)}
-            className="ml-2 text-xs text-purple-400 hover:text-purple-300 underline underline-offset-2 whitespace-nowrap"
-          >
-            show less
-          </button>
-        </div>
-      ) : (
-        <div className="flex items-start gap-1">
-          <span className="text-sm text-slate-400 line-clamp-2">{formatted}</span>
-          <button
-            onClick={() => setExpanded(true)}
-            className="text-xs text-purple-400 hover:text-purple-300 underline underline-offset-2 whitespace-nowrap flex-shrink-0 mt-0.5"
-          >
-            more
-          </button>
-        </div>
-      )}
-    </div>
-  );
 }
 
 function NoteModal({ log, onClose }: { log: any; onClose: () => void }) {
@@ -154,7 +127,7 @@ function NoteModal({ log, onClose }: { log: any; onClose: () => void }) {
       <div className="bg-[#0f0f13] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between p-4 border-b border-white/8">
           <div>
-            <p className="text-sm font-bold text-white">{log.userName || log.userId}</p>
+            <p className="text-sm font-bold text-white">{log.userName || "Staff"}</p>
             <p className="text-xs text-slate-500">{log.userEmail}</p>
           </div>
           <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={18} /></button>
@@ -182,7 +155,7 @@ export default function ActivityLogs() {
 
   const filtered = logs.filter((l: any) => {
     const q = search.toLowerCase();
-    return !q || l.userName?.toLowerCase().includes(q) || l.note?.toLowerCase().includes(q) || l.userId?.toLowerCase().includes(q);
+    return !q || l.userName?.toLowerCase().includes(q) || l.note?.toLowerCase().includes(q);
   });
 
   return (
@@ -237,18 +210,18 @@ export default function ActivityLogs() {
             {filtered.map((log: any) => {
               const [typeLabel, typeColor] = TYPE_MAP[log.type] || [log.type, "gray" as const];
               const formatted = formatNote(log.note, log.type);
-              const isLong = formatted !== "—" && formatted.length > 60;
+              const isLong = formatted !== "—" && formatted.length > 80;
               return (
                 <tr key={log.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
                       <div className="w-7 h-7 rounded-full bg-purple-600/20 flex items-center justify-center flex-shrink-0">
                         <span className="text-purple-400 text-[10px] font-bold">
-                          {(log.userName || log.userId || "?")[0].toUpperCase()}
+                          {(log.userName || "?")[0].toUpperCase()}
                         </span>
                       </div>
                       <div>
-                        <p className="text-sm font-semibold text-slate-200">{log.userName || log.userId || "—"}</p>
+                        <p className="text-sm font-semibold text-slate-200">{log.userName || "—"}</p>
                         <p className="text-xs text-slate-600">{log.userEmail || ""}</p>
                       </div>
                     </div>
@@ -256,22 +229,17 @@ export default function ActivityLogs() {
                   <td className="px-4 py-3"><Badge label={typeLabel} color={typeColor} /></td>
                   <td className="px-4 py-3 max-w-xs">
                     {isLong ? (
-                      <button
-                        onClick={() => setModalLog(log)}
-                        className="text-left group"
-                      >
-                        <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors line-clamp-2">
-                          {formatted}
-                        </span>
-                        <span className="block text-[11px] text-purple-400 group-hover:text-purple-300 transition-colors mt-0.5 underline underline-offset-2">
-                          click to expand
+                      <button onClick={() => setModalLog(log)} className="text-left group w-full">
+                        <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors">
+                          {formatted.slice(0, 80)}
+                          <span className="text-purple-400 group-hover:text-purple-300"> … expand</span>
                         </span>
                       </button>
                     ) : (
                       <span className="text-sm text-slate-400">{formatted}</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-xs text-slate-500">{log.hostelName || log.hostelId || "—"}</td>
+                  <td className="px-4 py-3 text-xs text-slate-500">{log.hostelName || "—"}</td>
                   <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
                     {log.createdAt ? new Date(log.createdAt).toLocaleString("en-IN", {
                       day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit", hour12: true,

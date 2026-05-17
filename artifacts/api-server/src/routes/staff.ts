@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, usersTable, timeLogsTable, hostelsTable } from "@workspace/db";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, inArray } from "drizzle-orm";
 import { requireAdmin, requireVolunteer, generateId, AuthRequest } from "../lib/auth.js";
 
 const router = Router();
@@ -133,12 +133,13 @@ router.get("/active-list", requireAdmin, async (req: AuthRequest, res) => {
   res.json(filtered.map(s => ({ ...s, isOnline: true, lastActiveAt: s.lastActiveAt?.toISOString() || null })));
 });
 
-// GET /api/staff/logs — activity log with hostel-scoped filtering for coordinators
-router.get("/logs", requireAdmin, async (req: AuthRequest, res) => {
+// GET /api/staff/logs — activity log with hostel-scoped filtering (volunteer+)
+router.get("/logs", requireVolunteer, async (req: AuthRequest, res) => {
   const limit = Math.min(Number(req.query.limit) || 50, 500);
   const offset = Number(req.query.offset) || 0;
   const userId = req.query.userId as string | undefined;
   const hostelId = req.query.hostelId as string | undefined;
+  const typeParam = req.query.type as string | undefined;
 
   const [caller] = await db.select({ role: usersTable.role, hostelId: usersTable.hostelId, assignedHostelIds: usersTable.assignedHostelIds })
     .from(usersTable).where(eq(usersTable.id, req.userId!));
@@ -166,9 +167,22 @@ router.get("/logs", requireAdmin, async (req: AuthRequest, res) => {
   }
   if (userId) logs = logs.filter(l => l.userId === userId);
   if (hostelId) logs = logs.filter(l => l.hostelId === hostelId || l.userHostelId === hostelId);
+  if (typeParam) logs = logs.filter(l => l.type === typeParam);
 
   const page = logs.slice(offset, offset + limit);
-  res.json(page.map(l => ({ ...l, createdAt: l.createdAt.toISOString() })));
+
+  // Resolve hostel names in one query
+  const hostelIds = [...new Set(page.map(l => l.hostelId).filter(Boolean))] as string[];
+  const hostelRows = hostelIds.length
+    ? await db.select({ id: hostelsTable.id, name: hostelsTable.name }).from(hostelsTable).where(inArray(hostelsTable.id, hostelIds))
+    : [];
+  const hostelNameById = new Map(hostelRows.map(h => [h.id, h.name]));
+
+  res.json(page.map(l => ({
+    ...l,
+    hostelName: l.hostelId ? (hostelNameById.get(l.hostelId) || null) : null,
+    createdAt: l.createdAt.toISOString(),
+  })));
 });
 
 // GET /api/staff/all — all staff list with online status and hostel name (volunteer+)

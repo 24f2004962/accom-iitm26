@@ -13,21 +13,24 @@ export type Page =
   | "staff" | "announcements" | "csv-import" | "activity-logs"
   | "reports" | "master-table" | "manage-admins" | "history";
 
+const COORD_UP = ["coordinator", "admin", "superadmin"];
+const ADMIN_UP = ["admin", "superadmin"];
+
 const NAV: { id: Page; label: string; icon: React.ElementType; roles?: string[] }[] = [
   { id: "dashboard",     label: "Dashboard",      icon: LayoutDashboard },
-  { id: "students",      label: "Students",        icon: Users },
   { id: "attendance",    label: "Attendance",      icon: ClipboardCheck },
   { id: "mess",          label: "Mess Cards",      icon: UtensilsCrossed },
   { id: "inventory",     label: "Inventory",       icon: Package },
-  { id: "hostels",       label: "Hostels",         icon: Building2 },
-  { id: "staff",         label: "Staff",           icon: UserCog },
-  { id: "announcements", label: "Announcements",   icon: Megaphone },
-  { id: "master-table",  label: "Master Table",    icon: GraduationCap, roles: ["superadmin", "admin"] },
-  { id: "csv-import",    label: "CSV Import",      icon: Upload, roles: ["superadmin"] },
   { id: "activity-logs", label: "Activity Logs",   icon: Activity },
-  { id: "history",       label: "History",         icon: History, roles: ["superadmin", "admin"] },
-  { id: "reports",       label: "Reports",         icon: BarChart3, roles: ["superadmin", "admin"] },
-  { id: "manage-admins", label: "Manage Staff",    icon: FileText, roles: ["superadmin"] },
+  { id: "students",      label: "Students",        icon: Users,       roles: [...COORD_UP] },
+  { id: "hostels",       label: "Hostels",         icon: Building2,   roles: [...COORD_UP] },
+  { id: "staff",         label: "Staff",           icon: UserCog,     roles: [...COORD_UP] },
+  { id: "announcements", label: "Announcements",   icon: Megaphone,   roles: [...COORD_UP] },
+  { id: "master-table",  label: "Master Table",    icon: GraduationCap, roles: [...ADMIN_UP] },
+  { id: "history",       label: "History",         icon: History,     roles: [...ADMIN_UP] },
+  { id: "reports",       label: "Reports",         icon: BarChart3,   roles: [...ADMIN_UP] },
+  { id: "csv-import",    label: "CSV Import",      icon: Upload,      roles: ["superadmin"] },
+  { id: "manage-admins", label: "Manage Staff",    icon: FileText,    roles: ["superadmin"] },
 ];
 
 export default function Layout({

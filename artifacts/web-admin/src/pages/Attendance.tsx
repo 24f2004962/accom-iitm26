@@ -241,7 +241,7 @@ export default function Attendance() {
                   <td className="px-4 py-3">
                     <div>
                       <p className="text-sm font-semibold text-slate-200">{c.studentName || "—"}</p>
-                      <p className="text-xs text-slate-500">{c.studentEmail || c.studentId}</p>
+                      <p className="text-xs text-slate-500">{c.studentEmail || ""}</p>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{c.studentRoll || "—"}</td>
