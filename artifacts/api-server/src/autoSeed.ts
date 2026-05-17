@@ -21,7 +21,7 @@ const DEMO_STAFF = [
   {
     name: "Super Admin",
     email: "superadmin@iitm.ac.in",
-    password: "qwerty",
+    password: "123456",
     role: "superadmin" as const,
     hostelId: null,
     assignedHostelIds: "[]",
