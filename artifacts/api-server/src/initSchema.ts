@@ -194,6 +194,7 @@ export async function initSchema() {
       ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS bedsheet_submitted BOOLEAN DEFAULT FALSE;
       ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS pillow_submitted BOOLEAN DEFAULT FALSE;
       ALTER TABLE student_inventory ADD COLUMN IF NOT EXISTS updated_by TEXT;
+      ALTER TABLE users ADD COLUMN IF NOT EXISTS push_token TEXT;
     `);
     console.log("[schema] ✅ Schema ready (migrations applied).");
   } catch (err: any) {
