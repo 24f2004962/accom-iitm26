@@ -81,7 +81,7 @@ export function formatNote(note: string | null | undefined, type: string): strin
   const cleaned = stripUuids(note);
 
   // Humanise common backend-generated patterns (old format used raw IDs)
-  const patterns: [RegExp, string][] = [
+  const patterns: [RegExp, string | ((m: RegExpMatchArray) => string)][] = [
     [/^Checked in\b/i, "Checked in"],
     [/^Checked out\b/i, "Checked out"],
     [/^Revoked check-?in\b/i, "Revoked check-in for"],
