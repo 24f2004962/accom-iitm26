@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { PageHeader, Card, Table, Input, Select, Button, Badge, EmptyState, Spinner } from "@/components/ui";
-import { Activity, Download, Search, RefreshCw, LogIn, LogOut, CheckSquare } from "lucide-react";
+import { Activity, Download, Search, RefreshCw, X } from "lucide-react";
 
 const TYPE_MAP: Record<string, [string, "purple" | "green" | "blue" | "yellow" | "gray" | "red"]> = {
   login: ["Login", "green"],
@@ -21,7 +21,7 @@ const TYPE_MAP: Record<string, [string, "purple" | "green" | "blue" | "yellow" |
   custom: ["Custom", "gray"],
 };
 
-function formatNote(note: string | null | undefined, type: string): string {
+export function formatNote(note: string | null | undefined, type: string): string {
   if (!note) return "—";
   try {
     const obj = JSON.parse(note);
@@ -51,10 +51,68 @@ function formatNote(note: string | null | undefined, type: string): string {
   }
 }
 
+function NoteCell({ note, type }: { note: string | null | undefined; type: string }) {
+  const [expanded, setExpanded] = useState(false);
+  const formatted = formatNote(note, type);
+  const isLong = formatted.length > 60;
+
+  if (!isLong) {
+    return <span className="text-sm text-slate-400">{formatted}</span>;
+  }
+
+  return (
+    <div>
+      {expanded ? (
+        <div className="text-sm text-slate-300 leading-relaxed whitespace-pre-wrap break-words">
+          {formatted}
+          <button
+            onClick={() => setExpanded(false)}
+            className="ml-2 text-xs text-purple-400 hover:text-purple-300 underline underline-offset-2 whitespace-nowrap"
+          >
+            show less
+          </button>
+        </div>
+      ) : (
+        <div className="flex items-start gap-1">
+          <span className="text-sm text-slate-400 line-clamp-2">{formatted}</span>
+          <button
+            onClick={() => setExpanded(true)}
+            className="text-xs text-purple-400 hover:text-purple-300 underline underline-offset-2 whitespace-nowrap flex-shrink-0 mt-0.5"
+          >
+            more
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function NoteModal({ log, onClose }: { log: any; onClose: () => void }) {
+  const formatted = formatNote(log.note, log.type);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div className="bg-[#0f0f13] border border-white/10 rounded-2xl w-full max-w-lg shadow-2xl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-white/8">
+          <div>
+            <p className="text-sm font-bold text-white">{log.userName || log.userId}</p>
+            <p className="text-xs text-slate-500">{log.userEmail}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-500 hover:text-white transition-colors"><X size={18} /></button>
+        </div>
+        <div className="p-4 space-y-2">
+          <p className="text-xs text-slate-500 uppercase tracking-wider">Note / Remark</p>
+          <p className="text-sm text-slate-200 leading-relaxed whitespace-pre-wrap break-words">{formatted}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ActivityLogs() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
   const [limit, setLimit] = useState(100);
+  const [modalLog, setModalLog] = useState<any>(null);
 
   const { data: logs = [], isLoading, refetch } = useQuery({
     queryKey: ["staff-logs", limit, typeFilter],
@@ -117,6 +175,8 @@ export default function ActivityLogs() {
           <Table headers={["Staff Member", "Type", "Note", "Hostel", "Time"]}>
             {filtered.map((log: any) => {
               const [typeLabel, typeColor] = TYPE_MAP[log.type] || [log.type, "gray" as const];
+              const formatted = formatNote(log.note, log.type);
+              const isLong = formatted !== "—" && formatted.length > 60;
               return (
                 <tr key={log.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
                   <td className="px-4 py-3">
@@ -133,7 +193,23 @@ export default function ActivityLogs() {
                     </div>
                   </td>
                   <td className="px-4 py-3"><Badge label={typeLabel} color={typeColor} /></td>
-                  <td className="px-4 py-3 text-sm text-slate-400 max-w-xs truncate" title={formatNote(log.note, log.type)}>{formatNote(log.note, log.type)}</td>
+                  <td className="px-4 py-3 max-w-xs">
+                    {isLong ? (
+                      <button
+                        onClick={() => setModalLog(log)}
+                        className="text-left group"
+                      >
+                        <span className="text-sm text-slate-400 group-hover:text-slate-300 transition-colors line-clamp-2">
+                          {formatted}
+                        </span>
+                        <span className="block text-[11px] text-purple-400 group-hover:text-purple-300 transition-colors mt-0.5 underline underline-offset-2">
+                          click to expand
+                        </span>
+                      </button>
+                    ) : (
+                      <span className="text-sm text-slate-400">{formatted}</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3 text-xs text-slate-500">{log.hostelName || log.hostelId || "—"}</td>
                   <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">
                     {log.createdAt ? new Date(log.createdAt).toLocaleString("en-IN", {
@@ -146,6 +222,8 @@ export default function ActivityLogs() {
           </Table>
         )}
       </Card>
+
+      {modalLog && <NoteModal log={modalLog} onClose={() => setModalLog(null)} />}
     </div>
   );
 }

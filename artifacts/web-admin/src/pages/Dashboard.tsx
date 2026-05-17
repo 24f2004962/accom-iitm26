@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { StatCard, Card, Spinner, Badge } from "@/components/ui";
 import { useAuth } from "@/context/AuthContext";
+import { formatNote } from "@/pages/ActivityLogs";
 import {
   Users, Building2, ClipboardCheck, Activity, UserCheck,
   LogIn, Clock, AlertTriangle, TrendingUp, Globe,
@@ -292,7 +293,7 @@ export default function Dashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-semibold text-slate-200 truncate">{log.userName || log.userId}</p>
-                    <p className="text-xs text-slate-500 truncate">{log.note || log.type}</p>
+                    <p className="text-xs text-slate-500 line-clamp-2">{formatNote(log.note, log.type) || log.type}</p>
                   </div>
                   <p className="text-[10px] text-slate-600 whitespace-nowrap">
                     {log.createdAt ? fmt(log.createdAt) : ""}

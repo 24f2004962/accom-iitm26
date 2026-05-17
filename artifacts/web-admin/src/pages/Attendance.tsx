@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch, downloadFile } from "@/lib/api";
 import { PageHeader, Card, Table, Select, Button, Badge, Spinner, EmptyState } from "@/components/ui";
-import { ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, UserPlus, Search, X } from "lucide-react";
+import { ClipboardCheck, Download, RefreshCw, CheckCircle, XCircle, UserPlus, Search, X, Calendar, CalendarDays } from "lucide-react";
 import { format } from "date-fns";
 
 function fmt(ts?: string | null) {
@@ -123,13 +123,14 @@ export default function Attendance() {
   const qc = useQueryClient();
   const today = format(new Date(), "yyyy-MM-dd");
   const [date, setDate] = useState(today);
+  const [allDates, setAllDates] = useState(false);
   const [hostelFilter, setHostelFilter] = useState("");
   const [checkInModalOpen, setCheckInModalOpen] = useState(false);
 
   const { data: hostels = [] } = useQuery({ queryKey: ["hostels"], queryFn: () => apiFetch<any[]>("/hostels") });
   const { data: checkins = [], isLoading, refetch } = useQuery({
-    queryKey: ["checkins", date, hostelFilter],
-    queryFn: () => apiFetch<any[]>(`/checkins?date=${date}${hostelFilter ? `&hostelId=${hostelFilter}` : ""}&limit=500`),
+    queryKey: ["checkins", allDates ? "all" : date, hostelFilter],
+    queryFn: () => apiFetch<any[]>(`/checkins?date=${allDates ? "all" : date}${hostelFilter ? `&hostelId=${hostelFilter}` : ""}&limit=1000`),
     refetchInterval: 15000,
   });
 
@@ -159,7 +160,7 @@ export default function Attendance() {
             <Button variant="primary" size="sm" onClick={() => setCheckInModalOpen(true)}>
               <UserPlus size={14} /> Check In Student
             </Button>
-            <Button variant="secondary" size="sm" onClick={() => downloadFile(`/export/attendance.csv?date=${date}`, `attendance-${date}.csv`)}>
+            <Button variant="secondary" size="sm" onClick={() => downloadFile(`/export/attendance.csv?date=${allDates ? "" : date}`, `attendance-${allDates ? "all" : date}.csv`)}>
               <Download size={14} /> Export CSV
             </Button>
           </div>
@@ -170,7 +171,7 @@ export default function Attendance() {
         {[
           { label: "In Campus", value: inCampus, icon: CheckCircle, color: "text-green-400 bg-green-500/15" },
           { label: "Checked Out", value: checkedOut, icon: XCircle, color: "text-blue-400 bg-blue-500/15" },
-          { label: "Total Today", value: checkins.length, icon: ClipboardCheck, color: "text-purple-400 bg-purple-500/15" },
+          { label: "Total Records", value: checkins.length, icon: ClipboardCheck, color: "text-purple-400 bg-purple-500/15" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label} className="p-4 flex items-center gap-3">
             <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${color}`}>
@@ -186,13 +187,37 @@ export default function Attendance() {
 
       <Card>
         <div className="p-4 border-b border-white/8 flex flex-wrap gap-3 items-center">
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            max={today}
-            className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all"
-          />
+          {/* Date mode toggle */}
+          <div className="flex rounded-lg border border-white/10 overflow-hidden">
+            <button
+              onClick={() => setAllDates(false)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors ${
+                !allDates ? "bg-purple-600 text-white" : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <Calendar size={12} /> By Date
+            </button>
+            <button
+              onClick={() => setAllDates(true)}
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold transition-colors border-l border-white/10 ${
+                allDates ? "bg-purple-600 text-white" : "text-slate-400 hover:text-slate-200"
+              }`}
+            >
+              <CalendarDays size={12} /> All Dates
+            </button>
+          </div>
+
+          {/* Date picker — only shown in "By Date" mode */}
+          {!allDates && (
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              max={today}
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-slate-100 outline-none focus:border-purple-500/60 transition-all"
+            />
+          )}
+
           <Select value={hostelFilter} onChange={setHostelFilter} className="min-w-40">
             <option value="">All Hostels</option>
             {hostels.map((h: any) => <option key={h.id} value={h.id}>{h.name}</option>)}
@@ -206,9 +231,9 @@ export default function Attendance() {
         {isLoading ? (
           <div className="py-12 flex justify-center"><Spinner size={24} /></div>
         ) : checkins.length === 0 ? (
-          <EmptyState icon={ClipboardCheck} title="No check-ins found" sub="No attendance records for this date/hostel" />
+          <EmptyState icon={ClipboardCheck} title="No check-ins found" sub={allDates ? "No attendance records found" : "No attendance records for this date/hostel"} />
         ) : (
-          <Table headers={["Student", "Roll", "Room", "Hostel", "Marked By", "Check In", "Check Out", "Status", "Actions"]}>
+          <Table headers={["Student", "Roll", "Room", "Hostel", "Date", "Marked By", "Check In", "Check Out", "Status", "Actions"]}>
             {checkins.map((c: any) => {
               const checkedOutNow = !!c.checkOutTime;
               return (
@@ -224,6 +249,7 @@ export default function Attendance() {
                   <td className="px-4 py-3 text-sm text-slate-400">
                     {hostels.find((h: any) => h.id === c.hostelId)?.name || "—"}
                   </td>
+                  <td className="px-4 py-3 text-xs text-slate-500 whitespace-nowrap">{c.date || "—"}</td>
                   <td className="px-4 py-3 text-xs text-slate-400">{c.volunteerName || "—"}</td>
                   <td className="px-4 py-3">
                     <span className="text-sm font-medium text-green-400">{fmt(c.checkInTime)}</span>

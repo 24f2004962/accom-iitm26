@@ -383,9 +383,9 @@ router.get("/:studentId/today", requireVolunteer, async (req: AuthRequest, res) 
 // GET /api/checkins — list check-ins
 router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
   const { hostelId, date, limit: rawLimit, offset: rawOffset } = req.query;
-  const limit = Math.min(Number(rawLimit) || 100, 500);
+  const limit = Math.min(Number(rawLimit) || 100, 1000);
   const offset = Number(rawOffset) || 0;
-  const targetDate = (date as string) || todayStr();
+  const targetDate = (date as string) === "all" ? null : ((date as string) || todayStr());
   const requestedHostelId = typeof hostelId === "string" ? hostelId : "";
 
   const [caller] = await db.select({
@@ -407,7 +407,8 @@ router.get("/", requireVolunteer, async (req: AuthRequest, res) => {
     ? [requestedHostelId]
     : scoped;
 
-  const conditions = [eq(checkinsTable.date, targetDate)];
+  const conditions = [];
+  if (targetDate) conditions.push(eq(checkinsTable.date, targetDate));
   if (effectiveHostels) {
     conditions.push(inArray(checkinsTable.hostelId, effectiveHostels));
   }

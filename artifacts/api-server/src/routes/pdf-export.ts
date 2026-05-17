@@ -184,6 +184,7 @@ function drawStatBox(
 /**
  * Render a full table.
  * Returns the y position after the last row.
+ * multilineCol: if set, this column index will wrap text (lineBreak:true) and row height grows dynamically.
  */
 function drawTable(
   doc: any,
@@ -193,14 +194,14 @@ function drawTable(
   tableLeft: number,
   startY: number,
   maxY: number,
-  colColors?: (string | null)[],   // per-column color override for data rows
-  onNewPage?: (doc: any, pageNum: number) => number  // returns new startY
+  colColors?: (string | null)[],
+  onNewPage?: (doc: any, pageNum: number) => number,
+  multilineCol?: number
 ): number {
   const totalW = colW.reduce((a, b) => a + b, 0);
   let y = startY;
   let pageNum = 1;
 
-  // Helper: draw header row
   const drawHeader = (atY: number) => {
     doc.rect(tableLeft, atY, totalW, HDR_H).fill(C.blue);
     let cx = tableLeft;
@@ -213,7 +214,6 @@ function drawTable(
         });
       cx += colW[i];
     });
-    // Right border of header
     doc.rect(tableLeft, atY, totalW, HDR_H).strokeColor(C.blue).lineWidth(0.3).stroke();
     return atY + HDR_H;
   };
@@ -221,45 +221,48 @@ function drawTable(
   y = drawHeader(y);
 
   rows.forEach((row, ri) => {
-    // Page break
-    if (y + ROW_H > maxY) {
+    // Calculate effective row height — expand if multiline column has lots of text
+    let rowH = ROW_H;
+    if (multilineCol !== undefined) {
+      const cellText = String(row[multilineCol] ?? "—");
+      const charsPerLine = Math.floor((colW[multilineCol] - CELL_PAD * 2) / (FONT_ROW * 0.52));
+      const lines = Math.max(1, Math.ceil(cellText.length / charsPerLine));
+      rowH = Math.max(ROW_H, lines * (FONT_ROW + 4) + 8);
+    }
+
+    if (y + rowH > maxY) {
       drawPageFooter(doc, pageNum);
       doc.addPage();
       pageNum++;
-      if (onNewPage) {
-        y = onNewPage(doc, pageNum);
-      } else {
-        y = 75;
-      }
+      y = onNewPage ? onNewPage(doc, pageNum) : 75;
       y = drawHeader(y);
     }
 
     const bg = ri % 2 === 0 ? C.rowEven : C.rowOdd;
-    doc.rect(tableLeft, y, totalW, ROW_H).fill(bg);
+    doc.rect(tableLeft, y, totalW, rowH).fill(bg);
 
     let cx = tableLeft;
     row.forEach((cell, ci) => {
       const override = colColors?.[ci];
       const color = override || C.text;
+      const isMulti = multilineCol !== undefined && ci === multilineCol;
       doc.fontSize(FONT_ROW).fillColor(color).font("Helvetica")
-        .text(String(cell ?? "—"), cx + CELL_PAD, y + (ROW_H - FONT_ROW) / 2, {
+        .text(String(cell ?? "—"), cx + CELL_PAD, y + CELL_PAD, {
           width: colW[ci] - CELL_PAD * 2,
-          lineBreak: false,
-          ellipsis: true,
+          lineBreak: isMulti,
+          ellipsis: !isMulti,
+          height: isMulti ? rowH - CELL_PAD * 2 : undefined,
         });
       cx += colW[ci];
     });
 
-    // Row bottom border
-    doc.moveTo(tableLeft, y + ROW_H)
-      .lineTo(tableLeft + totalW, y + ROW_H)
+    doc.moveTo(tableLeft, y + rowH)
+      .lineTo(tableLeft + totalW, y + rowH)
       .strokeColor(C.border).lineWidth(0.3).stroke();
+    doc.moveTo(tableLeft, y).lineTo(tableLeft, y + rowH).strokeColor(C.border).lineWidth(0.3).stroke();
+    doc.moveTo(tableLeft + totalW, y).lineTo(tableLeft + totalW, y + rowH).strokeColor(C.border).lineWidth(0.3).stroke();
 
-    // Outer vertical borders
-    doc.moveTo(tableLeft, y).lineTo(tableLeft, y + ROW_H).strokeColor(C.border).lineWidth(0.3).stroke();
-    doc.moveTo(tableLeft + totalW, y).lineTo(tableLeft + totalW, y + ROW_H).strokeColor(C.border).lineWidth(0.3).stroke();
-
-    y += ROW_H;
+    y += rowH;
   });
 
   return y;
@@ -430,13 +433,13 @@ router.get("/activity-logs", requireAdmin, async (_req, res) => {
     t(l.userName || "Unknown", 24),
     t(l.userRole || "—", 12),
     t(l.type, 12),
-    t(formatNoteForPdf(l.note, l.type), 52),
+    formatNoteForPdf(l.note, l.type),
   ]);
 
   drawTable(doc, headers, rows, colW, tableLeft, startY, maxY, null as any, (d, pn) => {
     drawPageHeader(d, "Staff Activity Logs", `${logs.length} entries`);
     return 72;
-  });
+  }, 4);
 
   drawPageFooter(doc, pageNum);
   doc.end();
