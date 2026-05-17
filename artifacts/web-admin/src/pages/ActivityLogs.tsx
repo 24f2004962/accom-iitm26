@@ -21,34 +21,94 @@ const TYPE_MAP: Record<string, [string, "purple" | "green" | "blue" | "yellow" |
   custom: ["Custom", "gray"],
 };
 
+const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
+
+function stripUuids(text: string): string {
+  return text.replace(UUID_RE, "").replace(/\s{2,}/g, " ").trim();
+}
+
+const TYPE_LABELS: Record<string, string> = {
+  login: "Logged in",
+  logout: "Logged out",
+  active: "Marked self active",
+  inactive: "Marked self inactive",
+  checkin: "Checked in a student",
+  checkout: "Checked out a student",
+  "revoke-checkin": "Revoked student check-in",
+  "revoke-checkout": "Revoked student check-out",
+  "revoke-submit": "Revoked inventory submission",
+  inventory: "Updated student inventory",
+  "mess-card": "Updated mess card",
+  entry: "Recorded entry",
+  assignment: "Updated staff assignment",
+  custom: "Custom action",
+};
+
 export function formatNote(note: string | null | undefined, type: string): string {
-  if (!note) return "—";
+  if (!note) return TYPE_LABELS[type] || type || "—";
+
+  // Try JSON parse (assignment logs store JSON)
   try {
     const obj = JSON.parse(note);
-    if (typeof obj !== "object" || obj === null) return note;
-    if (type === "assignment") {
-      const sentences: string[] = [];
-      const fromRole = obj.from?.role;
-      const toRole = obj.to?.role;
-      if (fromRole && toRole && fromRole !== toRole) {
-        sentences.push(`Role was changed from ${fromRole} to ${toRole}.`);
-      } else if (fromRole) {
-        sentences.push(`Role remains ${fromRole}.`);
+    if (typeof obj === "object" && obj !== null) {
+      if (type === "assignment") {
+        const sentences: string[] = [];
+        const fromRole = obj.from?.role;
+        const toRole = obj.to?.role;
+        if (fromRole && toRole && fromRole !== toRole) {
+          sentences.push(`Role changed from ${fromRole} to ${toRole}.`);
+        } else if (fromRole) {
+          sentences.push(`Role remains ${fromRole}.`);
+        }
+        const fromHostels: string[] = obj.from?.assignedHostelIds || [];
+        const toHostels: string[] = obj.to?.assignedHostelIds || [];
+        if (JSON.stringify(fromHostels) !== JSON.stringify(toHostels)) {
+          const from = fromHostels.length ? fromHostels.join(", ") : "none";
+          const to = toHostels.length ? toHostels.join(", ") : "none";
+          sentences.push(`Hostel assignment changed from ${from} to ${to}.`);
+        }
+        if (obj.to?.area) sentences.push(`Area set to ${obj.to.area}.`);
+        return sentences.length > 0 ? sentences.join(" ") : "Staff assignment was updated.";
       }
-      const fromHostels: string[] = obj.from?.assignedHostelIds || [];
-      const toHostels: string[] = obj.to?.assignedHostelIds || [];
-      if (JSON.stringify(fromHostels) !== JSON.stringify(toHostels)) {
-        const from = fromHostels.length ? fromHostels.join(", ") : "none";
-        const to = toHostels.length ? toHostels.join(", ") : "none";
-        sentences.push(`Hostel assignment changed from ${from} to ${to}.`);
-      }
-      if (obj.to?.area) sentences.push(`Area set to ${obj.to.area}.`);
-      return sentences.length > 0 ? sentences.join(" ") : "Staff assignment was updated.";
+      // Any other JSON: fall through to raw note (strip UUIDs)
+      return stripUuids(note);
     }
-    return note;
   } catch {
-    return note;
+    // Not JSON — continue below
   }
+
+  // Plain text notes: strip raw UUIDs and clean up
+  const cleaned = stripUuids(note);
+
+  // Humanise common backend-generated patterns (old format used raw IDs)
+  const patterns: [RegExp, string][] = [
+    [/^Checked in\b/i, "Checked in"],
+    [/^Checked out\b/i, "Checked out"],
+    [/^Revoked check-?in\b/i, "Revoked check-in for"],
+    [/^Revoked check-?out\b/i, "Revoked check-out for"],
+    [/^Revoked checkout\b/i, "Revoked check-out for"],
+    [/^Revoked inventory submission/i, "Revoked inventory submission"],
+    [/^Revoked inventory/i, "Revoked inventory"],
+    [/^Submitted (mattress|bedsheet|pillow)\b/i, (m: RegExpMatchArray) => `Submitted ${m[1]}`],
+    [/^Gave mess card\b/i, "Gave mess card"],
+    [/^Revoked mess card\b/i, "Revoked mess card"],
+    [/^User login$/i, "Logged in"],
+    [/^User logout$/i, "Logged out"],
+  ];
+
+  for (const [pattern, replacement] of patterns) {
+    if (pattern.test(note)) {
+      if (typeof replacement === "function") {
+        const m = note.match(pattern as RegExp);
+        return m ? (replacement as any)(m) + (cleaned.replace(pattern.source ? "" : "", "").trim() ? " — " + cleaned : "") : cleaned;
+      }
+      // If original note had a UUID (old format), cleaned is shorter — show cleaned version
+      // If no UUID (new format with student name), cleaned === note
+      return cleaned || (replacement as string);
+    }
+  }
+
+  return cleaned || TYPE_LABELS[type] || type || "—";
 }
 
 function NoteCell({ note, type }: { note: string | null | undefined; type: string }) {
@@ -152,11 +212,12 @@ export default function ActivityLogs() {
             <option value="">All Types</option>
             {Object.keys(TYPE_MAP).map((k) => <option key={k} value={k}>{TYPE_MAP[k][0]}</option>)}
           </Select>
-          <Select value={String(limit)} onChange={(v) => setLimit(Number(v))} className="min-w-28">
+          <Select value={String(limit)} onChange={(v) => setLimit(Number(v))} className="min-w-36">
             <option value="50">50 records</option>
             <option value="100">100 records</option>
             <option value="250">250 records</option>
             <option value="500">500 records</option>
+            <option value="1000">All records</option>
           </Select>
           <Button variant="ghost" size="sm" onClick={() => refetch()}>
             <RefreshCw size={13} /> Refresh

@@ -280,7 +280,7 @@ router.post("/inventory/:studentId/submit-item", requireVolunteer, async (req: A
     res.status(400).json({ message: "item must be mattress, bedsheet, or pillow" }); return;
   }
 
-  const [student] = await db.select({ hostelId: usersTable.hostelId }).from(usersTable).where(eq(usersTable.id, studentId));
+  const [student] = await db.select({ hostelId: usersTable.hostelId, name: usersTable.name, rollNumber: usersTable.rollNumber, roomNumber: usersTable.roomNumber }).from(usersTable).where(eq(usersTable.id, studentId));
   if (!student) { res.status(404).json({ message: "Student not found" }); return; }
 
   const [existing] = await db.select().from(studentInventoryTable).where(eq(studentInventoryTable.studentId, studentId));
@@ -341,7 +341,7 @@ router.post("/inventory/:studentId/submit-item", requireVolunteer, async (req: A
     userId: req.userId!,
     hostelId: student.hostelId || null,
     type: "inventory",
-    note: `Submitted ${item} for student ${studentId}`,
+    note: `Submitted ${item} for ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}${student.roomNumber ? `, Room ${student.roomNumber}` : ""}`,
   });
 
   res.json({ ...record, lockedAt: record.lockedAt?.toISOString() || null });
@@ -449,7 +449,7 @@ router.patch("/mess-card/:studentId", requireVolunteer, async (req: AuthRequest,
   const { studentId } = req.params;
   const { messCard } = req.body;
 
-  const [student] = await db.select({ hostelId: usersTable.hostelId }).from(usersTable).where(eq(usersTable.id, studentId));
+  const [student] = await db.select({ hostelId: usersTable.hostelId, name: usersTable.name, rollNumber: usersTable.rollNumber, roomNumber: usersTable.roomNumber }).from(usersTable).where(eq(usersTable.id, studentId));
   if (!student) { res.status(404).json({ message: "Student not found" }); return; }
 
   const [existing] = await db.select().from(studentInventoryTable).where(eq(studentInventoryTable.studentId, studentId));
@@ -465,7 +465,7 @@ router.patch("/mess-card/:studentId", requireVolunteer, async (req: AuthRequest,
     userId: req.userId!,
     hostelId: student.hostelId || null,
     type: "mess-card",
-    note: `${newMessCard ? "Gave" : "Revoked"} mess card for student ${studentId}`,
+    note: `${newMessCard ? "Gave" : "Revoked"} mess card for ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}`,
   });
 
   if (existing) {

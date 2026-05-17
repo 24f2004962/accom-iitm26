@@ -391,7 +391,7 @@ router.post("/:studentId/revoke-submit", requireVolunteer, async (req: AuthReque
     id: generateId(),
     userId: req.userId!,
     type: "revoke-submit",
-    note: `Revoked inventory submission (${revokedItems}) for student ${studentId}`,
+    note: `Revoked inventory (${revokedItems}) for ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}`,
     hostelId: student.hostelId || null,
   });
 

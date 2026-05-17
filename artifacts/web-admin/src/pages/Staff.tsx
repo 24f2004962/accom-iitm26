@@ -2,7 +2,7 @@ import React, { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiFetch } from "@/lib/api";
 import { PageHeader, Card, Table, Input, Button, RoleBadge, Modal, Select, Spinner, EmptyState } from "@/components/ui";
-import { UserCog, Plus, Search, Trash2, CheckCircle, XCircle, RefreshCw, Building2, Key, AlertTriangle, X, Edit2 } from "lucide-react";
+import { UserCog, Plus, Search, Trash2, CheckCircle, XCircle, RefreshCw, Building2, Key, AlertTriangle, X, Edit2, Eye, EyeOff } from "lucide-react";
 
 const ROLE_MAX_HOSTELS: Record<string, number> = {
   volunteer: 1,
@@ -43,6 +43,7 @@ export default function Staff() {
   const [pwdTarget, setPwdTarget] = useState<any>(null);
   const [newPwd, setNewPwd] = useState("");
   const [pwdError, setPwdError] = useState("");
+  const [showPwd, setShowPwd] = useState(false);
 
   const { data: staff = [], isLoading, refetch } = useQuery({
     queryKey: ["all-staff"],
@@ -370,7 +371,7 @@ export default function Staff() {
       </Modal>
 
       {/* Reset Password Modal */}
-      <Modal open={!!pwdTarget} onClose={() => { setPwdTarget(null); setNewPwd(""); setPwdError(""); }} title="Reset Password">
+      <Modal open={!!pwdTarget} onClose={() => { setPwdTarget(null); setNewPwd(""); setPwdError(""); setShowPwd(false); }} title="Reset Password">
         {pwdTarget && (
           <div className="space-y-4">
             <div className="flex items-center gap-3 bg-white/3 rounded-xl p-3 border border-white/6">
@@ -382,12 +383,23 @@ export default function Staff() {
             </div>
             <div>
               <label className="text-xs font-semibold text-slate-400 mb-1.5 block">New Password</label>
-              <Input
-                type="password"
-                value={newPwd}
-                onChange={setNewPwd}
-                placeholder="Min 4 characters"
-              />
+              <div className="relative">
+                <Input
+                  type={showPwd ? "text" : "password"}
+                  value={newPwd}
+                  onChange={setNewPwd}
+                  placeholder="Min 4 characters"
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+                  tabIndex={-1}
+                >
+                  {showPwd ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
             </div>
             {pwdError && <p className="text-red-400 text-xs">{pwdError}</p>}
             <div className="flex gap-2 pt-1">

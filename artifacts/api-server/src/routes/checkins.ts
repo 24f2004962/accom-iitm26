@@ -79,6 +79,8 @@ router.post("/:studentId", requireVolunteer, async (req: AuthRequest, res) => {
 
   const [student] = await db.select({
     id: usersTable.id,
+    name: usersTable.name,
+    rollNumber: usersTable.rollNumber,
     hostelId: usersTable.hostelId,
     roomNumber: usersTable.roomNumber,
     assignedMess: usersTable.assignedMess,
@@ -156,7 +158,7 @@ router.post("/:studentId", requireVolunteer, async (req: AuthRequest, res) => {
     userId: req.userId!,
     hostelId: student.hostelId || null,
     type: "checkin",
-    note: `Checked in student ${studentId}`,
+    note: `Checked in ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}${student.roomNumber ? `, Room ${student.roomNumber}` : ""}`,
   });
 
   res.status(201).json({
@@ -191,6 +193,8 @@ router.patch("/:id/checkout", requireVolunteer, async (req: AuthRequest, res) =>
     .where(eq(usersTable.id, checkin.studentId));
 
   const [student] = await db.select({
+    name: usersTable.name,
+    rollNumber: usersTable.rollNumber,
     hostelId: usersTable.hostelId,
     roomNumber: usersTable.roomNumber,
     assignedMess: usersTable.assignedMess,
@@ -227,7 +231,7 @@ router.patch("/:id/checkout", requireVolunteer, async (req: AuthRequest, res) =>
     userId: req.userId!,
     hostelId: checkin.hostelId || null,
     type: "checkout",
-    note: `Checked out student ${checkin.studentId}`,
+    note: `Checked out ${student?.name || checkin.studentId}${student?.rollNumber ? ` (${student.rollNumber})` : ""}${student?.roomNumber ? `, Room ${student.roomNumber}` : ""}`,
   });
 
   res.json({
@@ -251,7 +255,7 @@ router.delete("/:studentId/today", requireVolunteer, async (req: AuthRequest, re
   if (!caller) { res.status(401).json({ message: "Unauthorized" }); return; }
   const scope = scopedHostels(caller);
 
-  const [student] = await db.select({ id: usersTable.id, hostelId: usersTable.hostelId })
+  const [student] = await db.select({ id: usersTable.id, name: usersTable.name, rollNumber: usersTable.rollNumber, hostelId: usersTable.hostelId, roomNumber: usersTable.roomNumber })
     .from(usersTable).where(eq(usersTable.id, studentId));
 
   if (!student) { res.status(404).json({ message: "Student not found" }); return; }
@@ -277,7 +281,7 @@ router.delete("/:studentId/today", requireVolunteer, async (req: AuthRequest, re
     id: generateId(),
     userId: req.userId!,
     type: "revoke-checkin",
-    note: `Revoked check-in for student ${studentId}`,
+    note: `Revoked check-in for ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}${student.roomNumber ? `, Room ${student.roomNumber}` : ""}`,
     hostelId: student.hostelId || null,
   });
 
@@ -317,11 +321,14 @@ router.patch("/:id/revoke-checkout", requireVolunteer, async (req: AuthRequest, 
       .where(eq(attendanceTable.id, existingAtt.id));
   }
 
+  const [revokeStudent] = await db.select({ name: usersTable.name, rollNumber: usersTable.rollNumber, roomNumber: usersTable.roomNumber })
+    .from(usersTable).where(eq(usersTable.id, checkin.studentId));
+
   await db.insert(timeLogsTable).values({
     id: generateId(),
     userId: req.userId!,
     type: "revoke-checkout",
-    note: `Revoked checkout for student ${checkin.studentId}`,
+    note: `Revoked check-out for ${revokeStudent?.name || checkin.studentId}${revokeStudent?.rollNumber ? ` (${revokeStudent.rollNumber})` : ""}${revokeStudent?.roomNumber ? `, Room ${revokeStudent.roomNumber}` : ""}`,
     hostelId: checkin.hostelId || null,
   });
 
