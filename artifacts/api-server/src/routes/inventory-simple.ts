@@ -227,6 +227,20 @@ router.patch("/:studentId", requireVolunteer, async (req: AuthRequest, res) => {
     }).returning();
   }
 
+  const givenItems = [newMattress && "mattress", newBedsheet && "bedsheet", newPillow && "pillow"].filter(Boolean);
+  const takenItems = [!newMattress && mattress === false && "mattress", !newBedsheet && bedsheet === false && "bedsheet", !newPillow && pillow === false && "pillow"].filter(Boolean);
+  const actionDesc = givenItems.length > 0
+    ? `Gave ${givenItems.join(", ")} to ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}`
+    : `Updated inventory for ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}`;
+
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    type: "inventory",
+    note: actionDesc,
+    hostelId: student.hostelId || null,
+  });
+
   res.json(record);
 });
 
@@ -294,6 +308,15 @@ router.post("/:studentId/submit", requireVolunteer, async (req: AuthRequest, res
     updatedAt: now,
   }).where(eq(studentInventoryTable.id, existing.id)).returning();
 
+  const submittedItems = [mattressSubmit && "mattress", bedsheetSubmit && "bedsheet", pillowSubmit && "pillow"].filter(Boolean);
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    type: "inventory",
+    note: `Submitted ${submittedItems.join(", ")} for ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}${locked ? " — inventory locked" : ""}`,
+    hostelId: student.hostelId || null,
+  });
+
   res.json(record);
 });
 
@@ -339,6 +362,14 @@ router.patch("/:studentId/mess-card", requireVolunteer, async (req: AuthRequest,
       updatedBy: req.userId!,
     }).returning();
   }
+
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    type: "mess-card",
+    note: `${newValue ? "Gave" : "Revoked"} mess card for ${student.name || studentId}${student.rollNumber ? ` (${student.rollNumber})` : ""}`,
+    hostelId: student.hostelId || null,
+  });
 
   res.json({
     ...record,

@@ -7,14 +7,15 @@ import {
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Slot, router, useSegments } from "expo-router";
+import * as ScreenCapture from "expo-screen-capture";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useRef, useState } from "react";
-import { AppState, AppStateStatus } from "react-native";
+import { AppState, AppStateStatus, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { AuthProvider, useAuth, useApiRequest } from "@/context/AuthContext";
 import { useHeartbeat } from "@/hooks/useHeartbeat";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
@@ -33,6 +34,33 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+function ScreenCaptureGuard() {
+  const { user } = useAuth();
+  const request = useApiRequest();
+  const isStaff = user?.role && user.role !== "student";
+
+  useEffect(() => {
+    if (Platform.OS === "web") return;
+    ScreenCapture.preventScreenCaptureAsync().catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (Platform.OS !== "android" || !user) return;
+    const sub = ScreenCapture.addScreenshotListener(() => {
+      request("/timelogs", {
+        method: "POST",
+        body: JSON.stringify({
+          type: "custom",
+          note: `Screenshot attempt detected on mobile device`,
+        }),
+      }).catch(() => {});
+    });
+    return () => sub.remove();
+  }, [user, request]);
+
+  return null;
+}
 
 function AuthGuard() {
   const { user, isLoading } = useAuth();
@@ -53,7 +81,12 @@ function AuthGuard() {
     }
   }, [user, isLoading, segments]);
 
-  return <Slot />;
+  return (
+    <>
+      <ScreenCaptureGuard />
+      <Slot />
+    </>
+  );
 }
 
 export default function RootLayout() {

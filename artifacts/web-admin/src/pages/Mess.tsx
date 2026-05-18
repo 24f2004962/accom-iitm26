@@ -23,7 +23,7 @@ export default function Mess() {
   const { data: students = [], isLoading, refetch } = useQuery<any[]>({
     queryKey: ["mess-students", hostelFilter],
     queryFn: () => apiFetch<any[]>(`/attendance${hostelFilter ? `?hostelId=${hostelFilter}` : ""}`),
-    refetchInterval: 10000,
+    refetchInterval: 5000,
   });
 
   const toggleMut = useMutation({
