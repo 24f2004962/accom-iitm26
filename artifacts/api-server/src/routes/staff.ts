@@ -222,6 +222,36 @@ router.get("/all", requireVolunteer, async (req: AuthRequest, res) => {
   })));
 });
 
+// PATCH /api/staff/:staffId/hostel — assign/update hostel for a staff member (admin+)
+router.patch("/:staffId/hostel", requireAdmin, async (req: AuthRequest, res) => {
+  const { staffId } = req.params;
+  const { hostelId, assignedHostelIds } = req.body;
+
+  const [target] = await db.select({ id: usersTable.id, name: usersTable.name, role: usersTable.role, hostelId: usersTable.hostelId })
+    .from(usersTable).where(eq(usersTable.id, staffId));
+  if (!target) { res.status(404).json({ message: "Staff member not found" }); return; }
+  if (target.role === "student") { res.status(400).json({ message: "Cannot assign hostel via this endpoint for students" }); return; }
+
+  const updateObj: Record<string, any> = {};
+  if (hostelId !== undefined) updateObj.hostelId = hostelId || null;
+  if (assignedHostelIds !== undefined) {
+    updateObj.assignedHostelIds = Array.isArray(assignedHostelIds) ? JSON.stringify(assignedHostelIds) : assignedHostelIds;
+  }
+
+  const [updated] = await db.update(usersTable).set(updateObj).where(eq(usersTable.id, staffId)).returning();
+
+  const [caller] = await db.select({ hostelId: usersTable.hostelId }).from(usersTable).where(eq(usersTable.id, req.userId!));
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    type: "assignment",
+    note: JSON.stringify({ staffName: target.name, hostelId: hostelId || null }),
+    hostelId: hostelId || caller?.hostelId || null,
+  });
+
+  res.json({ ...updated, isOnline: isOnline(updated.lastActiveAt) });
+});
+
 // GET /api/staff/:staffId/logs — full log history for a specific staff member
 router.get("/:staffId/logs", requireAdmin, async (req: AuthRequest, res) => {
   const { staffId } = req.params;

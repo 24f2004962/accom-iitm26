@@ -405,6 +405,9 @@ router.post("/inventory/:studentId/revoke-item", requireVolunteer, async (req: A
   const submittedField = `${item}Submitted` as "mattressSubmitted" | "bedsheetSubmitted" | "pillowSubmitted";
 
   // Reset both the "given" and "submitted" flag for this item, and unlock the inventory if it was locked.
+  const [student] = await db.select({ name: usersTable.name, rollNumber: usersTable.rollNumber, hostelId: usersTable.hostelId })
+    .from(usersTable).where(eq(usersTable.id, studentId));
+
   const [record] = await db.update(studentInventoryTable).set({
     [item]: false,
     [submittedField]: false,
@@ -414,6 +417,14 @@ router.post("/inventory/:studentId/revoke-item", requireVolunteer, async (req: A
     updatedBy: req.userId!,
     updatedAt: new Date(),
   } as any).where(eq(studentInventoryTable.studentId, studentId)).returning();
+
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    type: "revoke-submit",
+    note: `Revoked ${item} for ${student?.name || studentId}${student?.rollNumber ? ` (${student.rollNumber})` : ""}`,
+    hostelId: student?.hostelId || existing.hostelId || null,
+  });
 
   res.json({ ...record, lockedAt: record.lockedAt?.toISOString() || null });
 });
@@ -426,6 +437,9 @@ router.post("/inventory/:studentId/revoke", requireVolunteer, async (req: AuthRe
   if (!existing) {
     res.status(404).json({ message: "No inventory record" }); return;
   }
+
+  const [student] = await db.select({ name: usersTable.name, rollNumber: usersTable.rollNumber, hostelId: usersTable.hostelId })
+    .from(usersTable).where(eq(usersTable.id, studentId));
 
   const [record] = await db.update(studentInventoryTable).set({
     mattress: false,
@@ -440,6 +454,14 @@ router.post("/inventory/:studentId/revoke", requireVolunteer, async (req: AuthRe
     updatedBy: req.userId!,
     updatedAt: new Date(),
   }).where(eq(studentInventoryTable.studentId, studentId)).returning();
+
+  await db.insert(timeLogsTable).values({
+    id: generateId(),
+    userId: req.userId!,
+    type: "revoke-submit",
+    note: `Revoked all inventory for ${student?.name || studentId}${student?.rollNumber ? ` (${student.rollNumber})` : ""}`,
+    hostelId: student?.hostelId || existing.hostelId || null,
+  });
 
   res.json({ ...record, lockedAt: null, revoked: true });
 });
