@@ -261,7 +261,7 @@ const StudentCard = memo(function StudentCard({
 // ─── Staff Students View ───────────────────────────────────────────────────────
 
 function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any; isDark: boolean }) {
-  const { user, isSuperAdmin } = useAuth();
+  const { user, isSuperAdmin, refreshUser } = useAuth();
   const request = useApiRequest();
   const qc = useQueryClient();
   const isWeb = Platform.OS === "web";
@@ -363,9 +363,14 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
     setLoadingMore(false);
   }, [doFetch, canWork, hasActiveQuery, qc]);
 
-  // Auto-select primary hostel when assignedHostels becomes available (safety net for async user load)
+  // Auto-select primary hostel whenever assignment changes — handles:
+  // (a) hostel loaded after mount (selectedHostel still ALL_HOSTELS)
+  // (b) hostel reassigned to a different one (selectedHostel is stale UUID)
   useEffect(() => {
-    if (!isSuperAdmin && assignedHostels.length > 0 && selectedHostel === ALL_HOSTELS) {
+    if (isSuperAdmin) return;
+    if (assignedHostels.length === 0) return;
+    // If current selection is missing from the assigned list, reset to primary
+    if (!assignedHostels.includes(selectedHostel)) {
       setSelectedHostel(assignedHostels[0]);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -383,9 +388,11 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    // Also refresh user profile so hostel assignment changes from web admin are picked up immediately
+    await refreshUser();
     await load(true);
     setRefreshing(false);
-  }, [load]);
+  }, [load, refreshUser]);
 
   const onEndReached = useCallback(() => {
     if (hasMore && !loadingRef.current && !loadingMore) load(false);
@@ -402,7 +409,14 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
       {/* Header */}
       <View style={[stf.header, { paddingTop: 16, borderBottomColor: theme.border }]}>
         <View style={stf.headerTop}>
-          <Text style={[stf.title, { color: theme.text }]}>Students</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={[stf.title, { color: theme.text }]}>Students</Text>
+            {!isSuperAdmin && selectedHostel !== ALL_HOSTELS && (
+              <Text style={{ fontSize: 12, color: theme.tint, fontWeight: "600", marginTop: 1 }}>
+                {hostelNameById[selectedHostel] || "Loading…"}
+              </Text>
+            )}
+          </View>
           {total > 0 && (
             <View style={[stf.countBadge, { backgroundColor: theme.tint + "18", borderColor: theme.tint + "35" }]}>
               <Text style={[stf.countText, { color: theme.tint }]}>{total.toLocaleString()}</Text>
