@@ -109,10 +109,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => { loadStoredAuth(); }, []);
 
-  // Refresh user profile every 90s so role/hostel changes from web take effect
+  // Refresh user profile every 20s so role/hostel changes from web take effect quickly
   useEffect(() => {
     if (!state.token) return;
-    const timer = setInterval(refreshUser, 90000);
+    const timer = setInterval(refreshUser, 20000);
     return () => clearInterval(timer);
   }, [state.token]);
 

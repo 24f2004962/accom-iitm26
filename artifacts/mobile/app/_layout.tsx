@@ -51,8 +51,8 @@ function ScreenCaptureGuard() {
       request("/timelogs", {
         method: "POST",
         body: JSON.stringify({
-          type: "custom",
-          note: `Screenshot attempt detected on mobile device`,
+          type: "screenshot",
+          note: `Screenshot captured by ${user.name} (${user.email}) on mobile device`,
         }),
       }).catch(() => {});
     });

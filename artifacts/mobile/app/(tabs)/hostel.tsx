@@ -267,6 +267,19 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
   const isWeb = Platform.OS === "web";
   const topPad = Platform.OS === "web" ? 24 : Math.max(insets.top + 20, 100);
 
+  // Fetch real hostels from API so we can display names and filter by IDs
+  const { data: allHostels = [] } = useQuery<any[]>({
+    queryKey: ["hostels-list"],
+    queryFn: () => request("/hostels"),
+    staleTime: 60000,
+    refetchInterval: 60000,
+  });
+  const hostelNameById = useMemo(() => {
+    const map: Record<string, string> = {};
+    allHostels.forEach((h: any) => { map[h.id] = h.name; });
+    return map;
+  }, [allHostels]);
+
   // ─── Shift requirement ───────────────────────────────────────────────────────
   const requiresShift = !isSuperAdmin;
   const [activating, setActivating] = useState(false);
@@ -411,14 +424,14 @@ function StaffStudentsView({ theme, insets, isDark }: { theme: any; insets: any;
               theme={theme}
             />
             {(isSuperAdmin
-              ? KNOWN_HOSTELS
-              : assignedHostels
+              ? allHostels.map((h: any) => ({ id: h.id, name: h.name }))
+              : assignedHostels.map(id => ({ id, name: hostelNameById[id] || id }))
             ).map(h => (
               <HostelChip
-                key={h}
-                label={h}
-                active={selectedHostel === h}
-                onPress={() => { Haptics.selectionAsync(); setSelectedHostel(h); }}
+                key={h.id}
+                label={h.name}
+                active={selectedHostel === h.id}
+                onPress={() => { Haptics.selectionAsync(); setSelectedHostel(h.id); }}
                 theme={theme}
               />
             ))}
@@ -543,11 +556,6 @@ function HostelChip({ label, active, onPress, theme }: { label: string; active: 
   );
 }
 
-const KNOWN_HOSTELS = [
-  "Bhadra", "Brahmaputra", "Cauvery", "Ganga", "Godavari",
-  "Jamuna", "Krishna", "Mandakini", "Narmada", "Saraswathi",
-  "Sharavathi", "Swarnamukhi", "Tapti",
-];
 
 // ─── Student Hostel View ───────────────────────────────────────────────────────
 
@@ -562,21 +570,24 @@ function StudentHostelView({ theme, insets }: { theme: any; insets: any }) {
     queryKey: ["hostel", user?.hostelId],
     queryFn: () => request(`/hostels/${user?.hostelId}`),
     enabled: !!user?.hostelId,
-    staleTime: 60000,
+    staleTime: 5000,
+    refetchInterval: 20000,
   });
 
   const { data: contacts = [], refetch: refetchContacts } = useQuery<any[]>({
     queryKey: ["hostel-contacts", user?.hostelId],
     queryFn: () => request(`/hostel/contacts?hostelId=${user?.hostelId}`),
     enabled: !!user?.hostelId,
-    staleTime: 60000,
+    staleTime: 30000,
+    refetchInterval: 60000,
   });
 
   const { data: myInventory } = useQuery<any>({
     queryKey: ["my-inventory", user?.id],
     queryFn: () => request(`/attendance/inventory/${user?.id}`),
     enabled: !!user?.id,
-    staleTime: 60000,
+    staleTime: 10000,
+    refetchInterval: 30000,
   });
 
   const onRefresh = useCallback(async () => {

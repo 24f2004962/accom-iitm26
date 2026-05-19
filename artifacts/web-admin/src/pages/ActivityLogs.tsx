@@ -19,6 +19,7 @@ const TYPE_MAP: Record<string, [string, "purple" | "green" | "blue" | "yellow" |
   entry: ["Entry", "yellow"],
   assignment: ["Assignment", "purple"],
   custom: ["Custom", "gray"],
+  screenshot: ["Screenshot", "red"],
 };
 
 const UUID_RE = /\b[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\b/gi;
@@ -47,6 +48,7 @@ const TYPE_LABELS: Record<string, string> = {
   entry: "Recorded entry",
   assignment: "Updated staff assignment",
   custom: "Custom action",
+  screenshot: "Screenshot attempt detected",
 };
 
 export function formatNote(note: string | null | undefined, type: string): string {

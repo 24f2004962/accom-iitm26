@@ -8,7 +8,7 @@ const router = Router();
 // POST /api/timelogs — log an event with optional remark
 router.post("/", requireAuth, async (req: AuthRequest, res) => {
   const { type, hostelId, note, remark } = req.body;
-  const validTypes = ["login", "logout", "checkin", "entry", "active", "inactive", "custom"];
+  const validTypes = ["login", "logout", "checkin", "entry", "active", "inactive", "custom", "screenshot"];
   if (!type || !validTypes.includes(type)) {
     res.status(400).json({ message: `type must be one of: ${validTypes.join(", ")}` });
     return;
