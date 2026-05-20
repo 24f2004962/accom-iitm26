@@ -97,14 +97,14 @@ export default function Mess() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={UtensilsCrossed} title="No students found" sub="Select a hostel or search to filter students" />
         ) : (
-          <Table headers={["Student", "Roll No", "Room", "Hostel", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
+          <Table headers={["Student", "Roll No", "Room", "Mess", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
             {filtered.map((s: any) => {
               const inv = s.inventory || {};
               const hasCard = !!inv.messCard;
               const timeDisplay = hasCard
                 ? (inv.messCardGivenAt ? `Given ${fmtTime(inv.messCardGivenAt)}` : "Given")
                 : (inv.messCardRevokedAt ? `Revoked ${fmtTime(inv.messCardRevokedAt)}` : "—");
-              const hostelName = (hostels as any[]).find((h: any) => h.id === s.hostelId)?.name || s.hostelName || "—";
+              const messName = s.assignedMess || "—";
               const isToggling = toggling === s.id;
               return (
                 <tr key={s.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
@@ -121,7 +121,7 @@ export default function Mess() {
                   </td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.rollNumber || "—"}</td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.roomNumber || "—"}</td>
-                  <td className="px-4 py-3 text-sm text-slate-400">{hostelName}</td>
+                  <td className="px-4 py-3 text-sm text-slate-400">{messName}</td>
                   <td className="px-4 py-3">
                     <Badge label={hasCard ? "Given" : "Not Given"} color={hasCard ? "green" : "gray"} />
                   </td>
