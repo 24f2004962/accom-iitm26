@@ -48,13 +48,15 @@ export default function Staff() {
   const { data: staff = [], isLoading, refetch } = useQuery({
     queryKey: ["all-staff"],
     queryFn: () => apiFetch<any[]>("/staff/all"),
-    refetchInterval: 5000,
+    refetchInterval: 20000,
+    staleTime: 15000,
   });
 
   const { data: activeList = [] } = useQuery({
     queryKey: ["active-staff"],
     queryFn: () => apiFetch<any[]>("/staff/active-list"),
-    refetchInterval: 5000,
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
 
   const { data: hostels = [] } = useQuery({

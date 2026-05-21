@@ -71,41 +71,48 @@ export default function Dashboard() {
   const { data: summary, dataUpdatedAt: summaryUpdated } = useQuery({
     queryKey: ["reports-summary"],
     queryFn: () => apiFetch<any>("/reports/summary"),
-    refetchInterval: 4000,
+    refetchInterval: 30000,
+    staleTime: 20000,
     enabled: hasHostel,
   });
 
   const { data: attStats, dataUpdatedAt: attUpdated } = useQuery({
     queryKey: ["att-stats"],
     queryFn: () => apiFetch<any>("/attendance/stats"),
-    refetchInterval: 4000,
+    refetchInterval: 20000,
+    staleTime: 15000,
     enabled: hasHostel,
   });
 
   const { data: activeStaff, dataUpdatedAt: staffUpdated } = useQuery({
     queryKey: ["active-staff"],
     queryFn: () => apiFetch<any[]>("/staff/active-list"),
-    refetchInterval: 4000,
+    refetchInterval: 15000,
+    staleTime: 10000,
     enabled: hasHostel,
   });
 
   const { data: allStaff } = useQuery({
     queryKey: ["all-staff"],
     queryFn: () => apiFetch<any[]>("/staff/all"),
-    refetchInterval: 15000,
+    refetchInterval: 30000,
+    staleTime: 20000,
     enabled: hasHostel,
   });
 
   const { data: hostels } = useQuery({
     queryKey: ["hostels"],
     queryFn: () => apiFetch<any[]>("/hostels"),
+    staleTime: 60000,
+    refetchInterval: 60000,
     enabled: hasHostel,
   });
 
   const { data: recentLogs, dataUpdatedAt: logsUpdated } = useQuery({
     queryKey: ["timelogs-today"],
     queryFn: () => apiFetch<any[]>("/timelogs/today"),
-    refetchInterval: 4000,
+    refetchInterval: 20000,
+    staleTime: 15000,
     enabled: hasHostel,
   });
 

@@ -30,14 +30,16 @@ export default function History() {
     queryKey: ["history-checkins", date, hostelFilter],
     queryFn: () => apiFetch<any[]>(`/checkins?date=${date}${hostelFilter ? `&hostelId=${hostelFilter}` : ""}&limit=500`),
     enabled: tab === "checkins",
-    refetchInterval: 10000,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 
   const { data: inventory = [], isLoading: inventoryLoading, refetch: refetchInventory } = useQuery<any[]>({
     queryKey: ["history-inventory", hostelFilter],
     queryFn: () => apiFetch<any[]>(`/inventory-simple${hostelFilter ? `?hostelId=${hostelFilter}` : ""}`),
     enabled: tab === "inventory",
-    refetchInterval: 10000,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 
   const isLoading = tab === "checkins" ? checkinsLoading : inventoryLoading;

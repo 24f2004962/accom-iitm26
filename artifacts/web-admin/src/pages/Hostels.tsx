@@ -335,20 +335,23 @@ export default function Hostels() {
   const { data: studentsData, refetch: refetchStudents } = useQuery({
     queryKey: ["students"],
     queryFn: () => apiFetch<{ students: any[]; total: number }>("/students?limit=5000"),
-    refetchInterval: 10000,
+    refetchInterval: 60000,
+    staleTime: 30000,
   });
   const studentList: any[] = studentsData?.students ?? [];
 
   const { data: allStaff = [], refetch: refetchStaff } = useQuery({
     queryKey: ["all-staff"],
     queryFn: () => apiFetch<any[]>("/staff/all"),
-    refetchInterval: 8000,
+    refetchInterval: 30000,
+    staleTime: 20000,
   });
 
   const { data: activeList = [] } = useQuery({
     queryKey: ["active-staff"],
     queryFn: () => apiFetch<any[]>("/staff/active-list"),
-    refetchInterval: 6000,
+    refetchInterval: 15000,
+    staleTime: 10000,
   });
 
   const { data: inventoryData = [] } = useQuery({
@@ -356,7 +359,8 @@ export default function Hostels() {
     queryFn: () =>
       selectedHostel ? apiFetch<any[]>(`/attendance?hostelId=${selectedHostel.id}`) : Promise.resolve([]),
     enabled: !!selectedHostel,
-    refetchInterval: 10000,
+    refetchInterval: 20000,
+    staleTime: 15000,
   });
 
   const activeIds = new Set((activeList as any[]).map((s: any) => s.id));
