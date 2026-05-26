@@ -98,7 +98,7 @@ export default function Mess() {
         ) : filtered.length === 0 ? (
           <EmptyState icon={UtensilsCrossed} title="No students found" sub="Select a hostel or search to filter students" />
         ) : (
-          <Table headers={["Student", "Roll No", "Room", "Mess", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
+          <Table headers={["Student", "Roll No", "Room", "Mess", "Serial No.", "Mess Card", "Given At / Revoked At", "Given By", "Action"]}>
             {filtered.map((s: any) => {
               const inv = s.inventory || {};
               const hasCard = !!inv.messCard;
@@ -123,6 +123,18 @@ export default function Mess() {
                   <td className="px-4 py-3 text-sm text-slate-400">{s.rollNumber || "—"}</td>
                   <td className="px-4 py-3 text-sm text-slate-400">{s.roomNumber || "—"}</td>
                   <td className="px-4 py-3 text-sm text-slate-400">{messName}</td>
+                  <td className="px-4 py-3">
+                    {hasCard && inv.messCardSerial ? (
+                      <div className="flex flex-col items-start gap-0.5">
+                        <span className="text-2xl font-black tracking-widest text-amber-400" style={{ fontVariantNumeric: "tabular-nums" }}>
+                          {inv.messCardSerial}
+                        </span>
+                        <span className="text-[10px] text-slate-500">Serial No.</span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-600">—</span>
+                    )}
+                  </td>
                   <td className="px-4 py-3">
                     <Badge label={hasCard ? "Given" : "Not Given"} color={hasCard ? "green" : "gray"} />
                   </td>

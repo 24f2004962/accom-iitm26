@@ -24,6 +24,7 @@ export const studentInventoryTable = pgTable("student_inventory", {
   bedsheetSubmitted: boolean("bedsheet_submitted").default(false),
   pillowSubmitted: boolean("pillow_submitted").default(false),
   messCard: boolean("mess_card").default(false),
+  messCardSerial: text("mess_card_serial"),
   messCardGivenAt: timestamp("mess_card_given_at"),
   messCardRevokedAt: timestamp("mess_card_revoked_at"),
   inventoryLocked: boolean("inventory_locked").default(false),

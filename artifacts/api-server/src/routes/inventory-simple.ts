@@ -320,6 +320,10 @@ router.post("/:studentId/submit", requireVolunteer, async (req: AuthRequest, res
   res.json(record);
 });
 
+function generateMessSerial(): string {
+  return String(Math.floor(1000 + Math.random() * 9000));
+}
+
 // PATCH /api/inventory-simple/:studentId/mess-card — toggle mess card
 router.patch("/:studentId/mess-card", requireVolunteer, async (req: AuthRequest, res) => {
   const { studentId } = req.params;
@@ -335,12 +339,14 @@ router.patch("/:studentId/mess-card", requireVolunteer, async (req: AuthRequest,
   const now = new Date();
   const givenAt = newValue ? now : null;
   const revokedAt = newValue ? null : now;
+  const serial = newValue ? generateMessSerial() : null;
 
   let record;
   if (existing) {
     [record] = await db.update(studentInventoryTable)
       .set({
         messCard: newValue,
+        messCardSerial: serial,
         messCardGivenAt: givenAt,
         messCardRevokedAt: revokedAt,
         updatedBy: req.userId!,
@@ -356,6 +362,7 @@ router.patch("/:studentId/mess-card", requireVolunteer, async (req: AuthRequest,
       mattress: false, bedsheet: false, pillow: false,
       mattressSubmitted: false, bedsheetSubmitted: false, pillowSubmitted: false,
       messCard: newValue,
+      messCardSerial: serial,
       messCardGivenAt: givenAt,
       messCardRevokedAt: revokedAt,
       inventoryLocked: false,
@@ -374,6 +381,7 @@ router.patch("/:studentId/mess-card", requireVolunteer, async (req: AuthRequest,
   res.json({
     ...record,
     messCard: newValue,
+    messCardSerial: record.messCardSerial || null,
     messCardGivenAt: record.messCardGivenAt?.toISOString() || null,
     messCardRevokedAt: record.messCardRevokedAt?.toISOString() || null,
     lockedAt: record.lockedAt?.toISOString() || null,
