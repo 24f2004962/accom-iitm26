@@ -57,7 +57,7 @@ outputType = "console"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd artifacts/mobile && EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=https://campusops-api-production.up.railway.app/api pnpm exec expo start --web --port 8099 --host lan"
+args = "cd artifacts/mobile && CI=false EXPO_NO_DOTENV=1 EXPO_PUBLIC_API_URL=https://campusops-api-production.up.railway.app/api pnpm exec expo start --web --port 8099 --tunnel"
 waitForPort = 8099
 
 [[workflows.workflow]]
