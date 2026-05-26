@@ -80,20 +80,24 @@ function StudentDetailSheet({ selected, selectedDetails, visible, onClose, onCon
             </View>
 
             <View style={[sd.messHero, { backgroundColor: "#f59e0b12", borderColor: "#f59e0b40" }]}>
-              <Text style={[sd.messHeroLabel, { color: theme.textSecondary }]}>MESS NAME</Text>
-              <Text style={sd.messHeroValue}>{mess}</Text>
-              {hasPass && !!(selected.messCardSerial || selectedDetails?.inventory?.messCardSerial || selectedDetails?.messCardSerial) && (
-                <View style={{ alignItems: "center", marginTop: 14 }}>
-                  <Text style={[sd.messHeroLabel, { color: theme.textSecondary, marginBottom: 4 }]}>SERIAL NO.</Text>
-                  <View style={{ backgroundColor: "#f59e0b", borderRadius: 16, paddingHorizontal: 28, paddingVertical: 10 }}>
-                    <Text style={{ fontSize: 52, fontFamily: "Inter_700Bold", color: "#fff", letterSpacing: 8, textAlign: "center" }}>
-                      {selected.messCardSerial || selectedDetails?.inventory?.messCardSerial || selectedDetails?.messCardSerial}
+              <View style={{ flexDirection: "row", gap: 16 }}>
+                <View style={{ flex: 1 }}>
+                  <Text style={[sd.messHeroLabel, { color: theme.textSecondary }]}>MESS NAME</Text>
+                  <Text style={sd.messHeroValue}>{mess}</Text>
+                </View>
+                {hasPass && (
+                  <View style={{ alignItems: "flex-end" }}>
+                    <Text style={[sd.messHeroLabel, { color: theme.textSecondary }]}>CARD ID</Text>
+                    <Text style={sd.messHeroValue}>
+                      {selected.messCardSerial || selectedDetails?.inventory?.messCardSerial || selectedDetails?.messCardSerial || "—"}
                     </Text>
                   </View>
-                  <Text style={{ fontSize: 11, color: theme.textTertiary, fontFamily: "Inter_400Regular", marginTop: 6 }}>
-                    Show this number at the mess counter
-                  </Text>
-                </View>
+                )}
+              </View>
+              {hasPass && !!(selected.messCardSerial || selectedDetails?.inventory?.messCardSerial || selectedDetails?.messCardSerial) && (
+                <Text style={{ fontSize: 11, color: theme.textTertiary, fontFamily: "Inter_400Regular", marginTop: 6 }}>
+                  Show Card ID at the mess counter
+                </Text>
               )}
             </View>
 
