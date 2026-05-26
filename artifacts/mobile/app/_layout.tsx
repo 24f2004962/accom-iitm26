@@ -17,6 +17,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AuthProvider, useAuth, useApiRequest } from "@/context/AuthContext";
 import { useHeartbeat } from "@/hooks/useHeartbeat";
+import { useLiveSync } from "@/hooks/useLiveSync";
 import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 SplashScreen.preventAutoHideAsync();
@@ -67,6 +68,7 @@ function AuthGuard() {
   const segments = useSegments();
 
   useHeartbeat();
+  useLiveSync();
   usePushNotifications();
 
   useEffect(() => {

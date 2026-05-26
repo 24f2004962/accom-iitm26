@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CampusOps",
-    "slug": "qwert",
+    "slug": "iitm-fvttvuro6imstvoxzl4",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -69,12 +69,12 @@
         "headOrigin": "https://localhost"
       },
       "eas": {
-        "projectId": "949f8de0-55d2-4d3d-bb1f-509196beba62"
+        "projectId": "2421039b-7aca-49b8-87da-0803ccb03059"
       }
     },
     "runtimeVersion": {
       "policy": "appVersion"
     },
-    "owner": "uuyhb"
+    "owner": "kaludon"
   }
 }

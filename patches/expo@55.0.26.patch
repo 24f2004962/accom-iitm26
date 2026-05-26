@@ -1,0 +1,13 @@
+diff --git a/AppEntry.js b/AppEntry.js
+index 92487326f8192b2ae999748b9cb744196aa689d0..11da65cc99ac54d32b1593124ec6c4137ac7c3e6 100644
+--- a/AppEntry.js
++++ b/AppEntry.js
+@@ -1,5 +1,7 @@
+ import registerRootComponent from 'expo/src/launch/registerRootComponent';
+ 
+-import App from '../../App';
++// [patched: pnpm symlinks make '../../App' resolve inside the virtual store]
++import '@expo/metro-runtime';
++import { App } from 'expo-router/build/qualified-entry';
+ 
+ registerRootComponent(App);
